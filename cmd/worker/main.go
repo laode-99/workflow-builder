@@ -44,12 +44,26 @@ func main() {
 	}
 	l.Info("Worker connected to database")
 
-	// --- Redis client (for IsStopped checks) ---
-	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
+	// --- Redis & Asynq Worker ---
+	var rdb *redis.Client
+	var redisOpt asynq.RedisClientOpt
 
-	// --- Asynq Worker ---
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL != "" {
+		opt, _ := redis.ParseURL(redisURL)
+		rdb = redis.NewClient(opt)
+		redisOpt = asynq.RedisClientOpt{
+			Addr:     opt.Addr,
+			Password: opt.Password,
+			DB:       opt.DB,
+		}
+	} else {
+		rdb = redis.NewClient(&redis.Options{Addr: redisAddr})
+		redisOpt = asynq.RedisClientOpt{Addr: redisAddr}
+	}
+
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: redisAddr},
+		redisOpt,
 		asynq.Config{
 			Concurrency: 10,
 			Queues: map[string]int{

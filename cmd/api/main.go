@@ -47,11 +47,6 @@ func main() {
 	}
 	l.Info("Connected to database")
 
-	// Schema cleanup (idempotent migration to latest schema)
-	db.Exec("ALTER TABLE workflows DROP COLUMN IF EXISTS project_id")
-	db.Exec("ALTER TABLE credentials DROP COLUMN IF EXISTS name")
-	db.Exec("DROP TABLE IF EXISTS projects")
-
 	db.AutoMigrate(
 		&model.Business{},
 		&model.Credential{},
@@ -62,8 +57,22 @@ func main() {
 	l.Info("Database migrations applied")
 
 	// --- Redis + Asynq ---
-	rdb := redis.NewClient(&redis.Options{Addr: redisAddr})
-	asynqClient := asynq.NewClient(asynq.RedisClientOpt{Addr: redisAddr})
+	var rdb *redis.Client
+	var asynqClient *asynq.Client
+
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL != "" {
+		opt, _ := redis.ParseURL(redisURL)
+		rdb = redis.NewClient(opt)
+		asynqClient = asynq.NewClient(asynq.RedisClientOpt{
+			Addr:     opt.Addr,
+			Password: opt.Password,
+			DB:       opt.DB,
+		})
+	} else {
+		rdb = redis.NewClient(&redis.Options{Addr: redisAddr})
+		asynqClient = asynq.NewClient(asynq.RedisClientOpt{Addr: redisAddr})
+	}
 	defer asynqClient.Close()
 
 	// --- Fiber App ---
