@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as icons from "lucide-react";
 import {
@@ -99,7 +99,7 @@ const DeploymentManifest = ({ wf, credentials }: { wf: WorkflowType, credentials
   );
 };
 
-export default function DashboardPage() {
+function Dashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1458,5 +1458,17 @@ export default function DashboardPage() {
       `}</style>
       <Toaster position="top-right" expand={false} richColors />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <Dashboard />
+    </Suspense>
   );
 }
