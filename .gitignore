@@ -1,0 +1,24 @@
+# Binaries
+main
+main.exe
+*.exe
+
+# Env
+.env
+*.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDEs
+.vscode/
+.idea/
+
+# Next.js
+.next/
+out/
+build/
+
+# Logs
+*.log
