@@ -125,6 +125,22 @@ func (r *LeadRepo) GetDueForDispatch(ctx context.Context, tx *gorm.DB, businessI
 	return leads, nil
 }
 
+// GetPendingWADispatch selects leads that have were classified as hot/callback 
+// by the chatbot but haven't been sent to a sales team WA group yet.
+func (r *LeadRepo) GetPendingWADispatch(ctx context.Context, businessID uuid.UUID, limit int) ([]model.Lead, error) {
+	var leads []model.Lead
+	err := r.db.WithContext(ctx).
+		Where("business_id = ? AND sent_to_dev = false AND (interest2 = ? OR interest2 = ?)", 
+			businessID, "Callback", "Agent").
+		Where("terminal_spam = false").
+		Limit(limit).
+		Find(&leads).Error
+	if err != nil {
+		return nil, fmt.Errorf("select pending wa dispatch: %w", err)
+	}
+	return leads, nil
+}
+
 // Transition applies a state-machine Patch to a lead atomically, using
 // optimistic locking on the Version column. On version mismatch it returns
 // ErrVersionConflict — the caller should re-read and re-decide rather than
@@ -279,6 +295,15 @@ func patchToMap(p statemachine.Patch) map[string]any {
 	}
 	if p.TerminalCompleted != nil {
 		m["terminal_completed"] = *p.TerminalCompleted
+	}
+	if p.Summary != nil {
+		m["summary"] = *p.Summary
+	}
+	if p.SentToDev != nil {
+		m["sent_to_dev"] = *p.SentToDev
+	}
+	if p.SentToWaGroupAt != nil {
+		m["sent_to_wa_group_at"] = *p.SentToWaGroupAt
 	}
 	return m
 }

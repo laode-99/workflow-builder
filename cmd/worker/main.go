@@ -21,6 +21,8 @@ import (
 
 	_ "github.com/workflow-builder/core/internal/workflows/mortgage"
 	_ "github.com/workflow-builder/core/internal/workflows/n8n"
+	"github.com/workflow-builder/core/internal/workflows/leadflow"
+	"github.com/workflow-builder/core/internal/workflows/system"
 )
 
 type taskPayload struct {
@@ -31,6 +33,9 @@ type taskPayload struct {
 func main() {
 	_ = godotenv.Load() // Load .env file if it exists
 	l := logger.New()
+
+	// Register Leadflow handlers
+	leadflow.RegisterHandlers()
 
 	// --- Config ---
 	redisAddr := getEnv("REDIS_ADDR", "127.0.0.1:6379")
@@ -75,6 +80,25 @@ func main() {
 	)
 
 	mux := asynq.NewServeMux()
+
+	// Wire up the leadflow multi-project AI engine.
+	// - Register cron workflow handlers (leadflow.ingest, leadflow.attempt_manager, ...)
+	// - Inject shared infra (db, rdb, encKey, asynq client) for per-lead task handlers
+	// - Register per-lead Asynq task handlers (retell dispatch, gupshup send, ...)
+	leadflow.RegisterHandlers()
+	{
+		leadflowAsynqClient := asynq.NewClient(redisOpt)
+		leadflow.SetDependencies(&leadflow.Dependencies{
+			DB:     db,
+			Redis:  rdb,
+			Asynq:  leadflowAsynqClient,
+			EncKey: encKey,
+			Log:    l,
+		})
+		if err := leadflow.RegisterTaskHandlers(mux); err != nil {
+			log.Fatalf("leadflow: register task handlers: %v", err)
+		}
+	}
 
 	// The main task handler: dispatches to SDK registry
 	mux.HandleFunc("workflow:execute", func(ctx context.Context, t *asynq.Task) error {
@@ -129,6 +153,18 @@ func main() {
 
 		return nil // always return nil so asynq doesn't retry
 	})
+
+	// System Workers
+	mux.HandleFunc("leadflow:crm_sync_poller", func(ctx context.Context, t *asynq.Task) error {
+		// System tasks use a dummy/global business execution context
+		exec := sdk.NewLiveExecution(ctx, uuid.Nil, uuid.Nil, "{}", "", db, rdb, encKey)
+		return leadflow.RunCRMSyncPoller(ctx, exec)
+	})
+
+	mux.HandleFunc("archive:six_month", system.ArchiveSixMonthTask(db))
+	
+	inspector := asynq.NewInspector(redisOpt)
+	mux.HandleFunc("system:dlq_monitor", system.DLQMonitorTask(inspector))
 
 	l.Info("Starting Workflow Worker connected to " + redisAddr)
 	if err := srv.Start(mux); err != nil {

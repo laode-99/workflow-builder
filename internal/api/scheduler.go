@@ -33,8 +33,15 @@ func NewScheduler(repo *Repo, asynqClient *asynq.Client) *Scheduler {
 func (s *Scheduler) Start(ctx context.Context) {
 	log.Println("[SCHEDULER] Starting background cron monitor (Asia/Jakarta)...")
 	
-	// Check every minute for workflows that need to be triggered
 	ticker := time.NewTicker(1 * time.Minute)
+	// System jobs ticker (e.g. CRM Sync Poller)
+	systemTicker := time.NewTicker(1 * time.Minute)
+
+	// Maintenance Schedules (Asia/Jakarta)
+	s.cron.AddFunc("0 0 * * 0", func() { s.enqueueSystemJob("archive:six_month") }) // Weekly Sunday
+	s.cron.AddFunc("0 * * * *", func() { s.enqueueSystemJob("system:dlq_monitor") }) // Hourly
+	s.cron.Start()
+
 	go func() {
 		for {
 			select {
@@ -43,9 +50,19 @@ func (s *Scheduler) Start(ctx context.Context) {
 				return
 			case <-ticker.C:
 				s.tick()
+			case <-systemTicker.C:
+				s.enqueueSystemJob("leadflow:crm_sync_poller")
 			}
 		}
 	}()
+}
+
+func (s *Scheduler) enqueueSystemJob(taskName string) {
+	task := asynq.NewTask(taskName, nil)
+	_, err := s.asynq.Enqueue(task, asynq.Queue("critical"))
+	if err != nil {
+		log.Printf("[SCHEDULER] Failed to enqueue system job %s: %v", taskName, err)
+	}
 }
 
 func (s *Scheduler) tick() {

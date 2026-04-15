@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/workflow-builder/core/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // CRMIntentRepo manages crm_sync_intents — the outbox used to guarantee
@@ -33,50 +34,21 @@ func (r *CRMIntentRepo) CreateTx(ctx context.Context, tx *gorm.DB, intent *model
 	return nil
 }
 
-// ClaimBatch atomically marks up to `limit` pending intents as in_progress
-// and returns them for processing. Stale in_progress rows (older than
-// `staleAfter`) are reclaimed — this covers worker crashes mid-flight.
-func (r *CRMIntentRepo) ClaimBatch(ctx context.Context, limit int, staleAfter time.Duration) ([]model.CRMSyncIntent, error) {
-	var claimed []model.CRMSyncIntent
-	now := time.Now()
-	cutoff := now.Add(-staleAfter)
-
-	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Find candidate IDs.
-		var ids []uuid.UUID
-		subErr := tx.Model(&model.CRMSyncIntent{}).
-			Where("status = ? OR (status = ? AND updated_at < ?)", "pending", "in_progress", cutoff).
-			Order("created_at ASC").
-			Limit(limit).
-			Pluck("id", &ids).Error
-		if subErr != nil {
-			return fmt.Errorf("pluck pending crm intents: %w", subErr)
-		}
-		if len(ids) == 0 {
-			return nil
-		}
-
-		// Claim them.
-		res := tx.Model(&model.CRMSyncIntent{}).
-			Where("id IN ?", ids).
-			Updates(map[string]any{
-				"status":     "in_progress",
-				"updated_at": now,
-			})
-		if res.Error != nil {
-			return fmt.Errorf("claim crm intents: %w", res.Error)
-		}
-
-		// Load the claimed rows for processing.
-		if err := tx.Where("id IN ?", ids).Find(&claimed).Error; err != nil {
-			return fmt.Errorf("load claimed crm intents: %w", err)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return claimed, nil
+// GetPendingForProcessing fetches intents that are pending or have transient errors,
+// using SKIP LOCKED to ensure atomic processing across multiple worker instances.
+func (r *CRMIntentRepo) GetPendingForProcessing(ctx context.Context, limit int) ([]model.CRMSyncIntent, error) {
+	var items []model.CRMSyncIntent
+	
+	err := r.db.WithContext(ctx).
+		Transaction(func(tx *gorm.DB) error {
+			return tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+				Where("status IN ? AND attempts < ?", []string{"pending", "failed"}, 5).
+				Order("created_at asc").
+				Limit(limit).
+				Find(&items).Error
+		})
+	
+	return items, err
 }
 
 // MarkDone marks an intent as successfully processed.
@@ -96,17 +68,16 @@ func (r *CRMIntentRepo) MarkDone(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// MarkFailed marks an intent as permanently failed and records the error.
+// MarkFailed records a failure for an intent and increments the attempt counter.
 func (r *CRMIntentRepo) MarkFailed(ctx context.Context, id uuid.UUID, errMsg string) error {
-	now := time.Now()
 	res := r.db.WithContext(ctx).
 		Model(&model.CRMSyncIntent{}).
 		Where("id = ?", id).
 		Updates(map[string]any{
-			"status":       "failed",
-			"last_error":   errMsg,
-			"processed_at": now,
-			"updated_at":   now,
+			"status":     "failed",
+			"last_error": errMsg,
+			"attempts":   gorm.Expr("attempts + 1"),
+			"updated_at": time.Now(),
 		})
 	if res.Error != nil {
 		return fmt.Errorf("mark crm intent failed: %w", res.Error)

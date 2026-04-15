@@ -1,0 +1,834 @@
+{
+  "name": "Tool - Simpan Visit-Anandaya",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "nama"
+            },
+            {
+              "name": "hp"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "tanggal"
+            },
+            {
+              "name": "bulan"
+            },
+            {
+              "name": "tahun"
+            },
+            {
+              "name": "jam"
+            },
+            {
+              "name": "summary"
+            },
+            {
+              "name": "interest"
+            },
+            {
+              "name": "interest2"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "10d4eccc-8c38-45f1-ac15-6f0ddbd41478",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 267212040,
+          "mode": "list",
+          "cachedResultName": "chatbot_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit#gid=267212040"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nama": "={{ $json.nama }}",
+            "hp": "={{ $json.hp }}",
+            "email": "={{ $json.email }}",
+            "summary": "={{ $json.summary }}",
+            "tanggal": "={{ $json.tanggal }}",
+            "bulan": "={{ $json.bulan }}",
+            "jam": "={{ $json.jam }}",
+            "tahun": "={{ $json.tahun }}",
+            "interest": "={{ $json.interest }}",
+            "interest2": "={{ $json.interest2 }}"
+          },
+          "matchingColumns": [
+            "Nomor"
+          ],
+          "schema": [
+            {
+              "id": "nama",
+              "displayName": "nama",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "hp",
+              "displayName": "hp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tanggal",
+              "displayName": "tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "bulan",
+              "displayName": "bulan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tahun",
+              "displayName": "tahun",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "jam",
+              "displayName": "jam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        256,
+        0
+      ],
+      "id": "6b71b17d-a977-4ded-882f-8d15b521e760",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('When Executed by Another Workflow').item.json.hp.replace(/^\\+/, '') }}",
+            "interest": "={{ $('If tertarik site visit').item.json.interest }}",
+            "summary": "={{ $json.summary ? $json.summary + '\\n\\n' : '' }}{{ $now.setZone('Asia/Jakarta').setLocale('en').format('dd MMMM yyyy, HH:mm') }} --- {{ $('If tertarik site visit').item.json.summary }}",
+            "svs_date": "={{\n  $('If tertarik site visit').item.json.tahun &&\n  $('If tertarik site visit').item.json.bulan &&\n  $('If tertarik site visit').item.json.tanggal\n    ? (() => {\n        const data = $('If tertarik site visit').item.json;\n\n        const year = data.tahun;\n        const day = data.tanggal;\n\n        const monthMap = {\n          Januari: 1,\n          Februari: 2,\n          Maret: 3,\n          April: 4,\n          Mei: 5,\n          Juni: 6,\n          Juli: 7,\n          Agustus: 8,\n          September: 9,\n          Oktober: 10,\n          November: 11,\n          Desember: 12,\n        };\n\n        const month = monthMap[data.bulan] ?? data.bulan;\n\n        // ⏰ kalau jam kosong → default 12:00:00 AM\n        if (!data.jam) {\n          return `${month}/${day}/${year} 12:00:00 AM`;\n        }\n\n        // normalisasi jam (contoh: \"15\", \"15:30\", \"3\")\n        const rawHour = String(data.jam).split(/[:.]/)[0];\n        const hour24 = parseInt(rawHour, 10);\n\n        if (isNaN(hour24)) {\n          return `${month}/${day}/${year} 12:00:00 AM`;\n        }\n\n        const minutes = \"00\";\n        const seconds = \"00\";\n        const period = hour24 >= 12 ? \"PM\" : \"AM\";\n        const hour12 = hour24 % 12 || 12;\n\n        return `${month}/${day}/${year} ${hour12}:${minutes}:${seconds} ${period}`;\n      })()\n    : \"\"\n}}\n"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        -64
+      ],
+      "id": "0cdb5e6a-b488-4c42-875a-ad278f0352b0",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('When Executed by Another Workflow').item.json.hp.replace(/^\\+/, '') }}",
+            "interest": "={{ $('If tertarik site visit').item.json.interest }}",
+            "summary": "={{ $json.summary ? $json.summary + '\\n\\n' : '' }}{{ $now.setZone('Asia/Jakarta').setLocale('en').format('dd MMMM yyyy, HH:mm') }} --- {{ $('If tertarik site visit').item.json.summary }}"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        144
+      ],
+      "id": "0227fefc-74e7-41c6-98e0-94e2d7c0b0b8",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "edca204f-ea38-4043-aad0-1437cd056535",
+              "leftValue": "={{ $json.interest }}",
+              "rightValue": "Tertarik Site Visit (memberikan jadwal) (Hot Leads)",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "cb7e37b0-d1ed-4b5c-b76d-f8a327ab784b",
+      "name": "If tertarik site visit"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "phone",
+              "lookupValue": "={{ $json.hp.replace(/^\\+/, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        112
+      ],
+      "id": "a5740e9a-1e16-4088-b30e-0d1e7f095315",
+      "name": "get summary2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "phone",
+              "lookupValue": "={{ $json.hp.replace(/^\\+/, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        928,
+        -96
+      ],
+      "id": "89742033-99c0-467b-a5b0-84807b60f1a5",
+      "name": "get summary1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If tertarik site visit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "If tertarik site visit": {
+      "main": [
+        [
+          {
+            "node": "get summary1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "get summary2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get summary2": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get summary1": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a3c04017-acaf-43a9-aee5-4555f46bf60b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2ea8369907bebad3abb942d1832fd0be7e6add33c61c3b8cabc0b20bb298f665"
+  },
+  "id": "ffZtHJBr31a8NZXn",
+  "tags": []
+}

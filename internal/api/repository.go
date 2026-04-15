@@ -33,6 +33,12 @@ func (r *Repo) GetBusiness(id uuid.UUID) (*model.Business, error) {
 	return &b, err
 }
 
+func (r *Repo) GetBusinessBySlug(slug string) (*model.Business, error) {
+	var b model.Business
+	err := r.db.First(&b, "slug = ?", slug).Error
+	return &b, err
+}
+
 func (r *Repo) DeleteBusiness(id uuid.UUID) error {
 	// Cascade: delete executions → workflows → credentials → business
 	var wfIDs []uuid.UUID
@@ -143,5 +149,81 @@ func (r *Repo) ListExecutionsByBusiness(businessID uuid.UUID, limit int) ([]mode
 func (r *Repo) ListExecutionLogs(executionID uuid.UUID) ([]model.ExecutionLog, error) {
 	var items []model.ExecutionLog
 	err := r.db.Where("execution_id = ?", executionID).Order("created_at asc").Find(&items).Error
+	return items, err
+}
+
+// --- Admin: Prompts ---
+
+func (r *Repo) ListPromptsByBusiness(bid uuid.UUID) ([]model.ProjectPrompt, error) {
+	var items []model.ProjectPrompt
+	err := r.db.Where("business_id = ?", bid).Order("kind asc, version desc").Find(&items).Error
+	return items, err
+}
+
+func (r *Repo) CreatePrompt(p *model.ProjectPrompt) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Deactivate current active prompt of this kind
+		tx.Model(&model.ProjectPrompt{}).
+			Where("business_id = ? AND kind = ? AND is_active = true", p.BusinessID, p.Kind).
+			Update("is_active", false)
+		
+		// Find latest version
+		var latestVer int
+		tx.Model(&model.ProjectPrompt{}).
+			Where("business_id = ? AND kind = ?", p.BusinessID, p.Kind).
+			Select("MAX(version)").Scan(&latestVer)
+		
+		p.Version = latestVer + 1
+		p.IsActive = true
+		return tx.Create(p).Error
+	})
+}
+
+// --- Admin: Sales ---
+
+func (r *Repo) ListSalesByBusiness(bid uuid.UUID) ([]model.SalesAssignment, error) {
+	var items []model.SalesAssignment
+	err := r.db.Where("business_id = ?", bid).Order("sales_name asc").Find(&items).Error
+	return items, err
+}
+
+func (r *Repo) UpsertSalesAssignment(s *model.SalesAssignment) error {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
+		return r.db.Create(s).Error
+	}
+	return r.db.Save(s).Error
+}
+
+func (r *Repo) ToggleSalesActive(id uuid.UUID) error {
+	return r.db.Model(&model.SalesAssignment{}).Where("id = ?", id).
+		Update("is_active", gorm.Expr("NOT is_active")).Error
+}
+
+// --- Admin: Leads ---
+
+func (r *Repo) ListLeadsExtended(bid uuid.UUID, page, limit int, search string) ([]model.Lead, int64, error) {
+	var items []model.Lead
+	var total int64
+	
+	query := r.db.Model(&model.Lead{}).Where("business_id = ?", bid)
+	if search != "" {
+		s := "%" + search + "%"
+		query = query.Where("phone LIKE ? OR name LIKE ? OR interest LIKE ?", s, s, s)
+	}
+	
+	query.Count(&total)
+	
+	err := query.Order("created_at desc").
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Find(&items).Error
+		
+	return items, total, err
+}
+
+func (r *Repo) ListMessagesByLead(leadID uuid.UUID) ([]model.LeadMessage, error) {
+	var items []model.LeadMessage
+	err := r.db.Where("lead_id = ?", leadID).Order("created_at asc").Find(&items).Error
 	return items, err
 }

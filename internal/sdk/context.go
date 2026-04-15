@@ -59,6 +59,8 @@ func (e *LiveExecution) ID() uuid.UUID         { return e.execID }
 func (e *LiveExecution) BusinessID() uuid.UUID  { return e.businessID }
 func (e *LiveExecution) Context() context.Context { return e.ctx }
 func (e *LiveExecution) Logger() logger.Logger  { return e.log }
+func (e *LiveExecution) GetDB() *gorm.DB        { return e.db }
+func (e *LiveExecution) GetRedis() *redis.Client  { return e.rdb }
 
 func (e *LiveExecution) GetVar(key string) string {
 	return e.vars[key]

@@ -1,4 +1,4 @@
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
@@ -87,6 +87,51 @@ export interface ExecutionLog {
   created_at: string;
 }
 
+// --- Leadflow Types ---
+
+export interface Lead {
+  id: string;
+  business_id: string;
+  external_id: string;
+  phone: string;
+  name: string;
+  attempt: number;
+  interest: string;
+  interest2: string;
+  svs_date: string | null;
+  summary: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectPrompt {
+  id: string;
+  business_id: string;
+  kind: string;
+  content: string;
+  version: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SalesAssignment {
+  id: string;
+  business_id: string;
+  sales_name: string;
+  spv_name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  lead_id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  created_at: string;
+}
+
 // --- API functions ---
 
 export const api = {
@@ -166,4 +211,28 @@ export const api = {
   // Logic
   getWorkflowLogic: (id: string) =>
     request<{ content: string }>(`/api/workflows/${id}/logic`),
+
+  // Leadflow Admin
+  listLeads: (bid: string, page = 1, limit = 50, search = "") =>
+    request<{ items: Lead[]; total: number; page: number; limit: number }>(
+      `/api/businesses/${bid}/leads?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`
+    ),
+  listPrompts: (bid: string) =>
+    request<ProjectPrompt[]>(`/api/businesses/${bid}/prompts`),
+  createPrompt: (bid: string, data: Partial<ProjectPrompt>) =>
+    request<ProjectPrompt>(`/api/businesses/${bid}/prompts`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  listSales: (bid: string) =>
+    request<SalesAssignment[]>(`/api/businesses/${bid}/sales`),
+  upsertSales: (bid: string, data: Partial<SalesAssignment>) =>
+    request<SalesAssignment>(`/api/businesses/${bid}/sales`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  toggleSales: (id: string) =>
+    request<{ ok: boolean }>(`/api/sales/${id}/toggle`, { method: "PATCH" }),
+  listMessages: (leadId: string) =>
+    request<ChatMessage[]>(`/api/leads/${leadId}/messages`),
 };

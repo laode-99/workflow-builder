@@ -9,6 +9,7 @@ import (
 // engine. It is stored as jsonb on businesses.config. Any field left unset in
 // the database override JSON falls back to the Defaults() value.
 type FlowConfig struct {
+	WebhookSecret           string           `json:"webhook_secret"`
 	AttemptLimit            int              `json:"attempt_limit"`
 	CallRetryGapHours       int              `json:"call_retry_gap_hours"`
 	MaxOutGraceHours        int              `json:"max_out_grace_hours"`

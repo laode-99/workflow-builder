@@ -9,7 +9,11 @@
 // code runs.
 package statemachine
 
-import "time"
+import (
+	"time"
+
+	"github.com/workflow-builder/core/internal/model"
+)
 
 // Lead is a minimal snapshot of a lead's state as seen by the state machine.
 // It contains only the fields the transition logic needs to read; writers
@@ -29,6 +33,7 @@ type Lead struct {
 	TerminalSpam          bool
 	TerminalAgent         bool
 	TerminalCompleted     bool
+	Summary               string
 }
 
 // Event is anything that happens to a lead. Concrete event types implement
@@ -101,6 +106,9 @@ type Patch struct {
 	TerminalSpam          *bool
 	TerminalAgent         *bool
 	TerminalCompleted     *bool
+	Summary               *string
+	SentToDev             *bool
+	SentToWaGroupAt       *time.Time
 }
 
 // IsEmpty reports whether the patch would leave the lead unchanged.
@@ -110,7 +118,8 @@ func (p Patch) IsEmpty() bool {
 		p.Interest == nil && p.Interest2 == nil && p.CustomerType == nil &&
 		p.TerminalInvalid == nil && p.TerminalResponded == nil &&
 		p.TerminalNotInterested == nil && p.TerminalSpam == nil &&
-		p.TerminalAgent == nil && p.TerminalCompleted == nil
+		p.TerminalAgent == nil && p.TerminalCompleted == nil &&
+		p.Summary == nil && p.SentToDev == nil && p.SentToWaGroupAt == nil
 }
 
 // Command is a side effect to enqueue after the patch commits. Concrete
@@ -145,3 +154,24 @@ func (CmdEnqueueRetellCall) commandMarker() {}
 func (CmdEnqueueWABridging) commandMarker() {}
 func (CmdEnqueueWAFinal) commandMarker()    {}
 func (CmdEnqueueCRMSync) commandMarker()    {}
+
+// LeadToStatemachine converts a DB model Lead to a pure statemachine Lead snapshot.
+func LeadToStatemachine(l model.Lead) Lead {
+	return Lead{
+		Attempt:               l.Attempt,
+		CallDate:              l.CallDate,
+		WhatsappSentAt:        l.WhatsappSentAt,
+		WhatsappReplyAt:       l.WhatsappReplyAt,
+		DisconnectedReason:    l.DisconnectedReason,
+		Interest:              l.Interest,
+		Interest2:             l.Interest2,
+		CustomerType:          l.CustomerType,
+		TerminalInvalid:       l.TerminalInvalid,
+		TerminalResponded:     l.TerminalResponded,
+		TerminalNotInterested: l.TerminalNotInterested,
+		TerminalSpam:          l.TerminalSpam,
+		TerminalAgent:         l.TerminalAgent,
+		TerminalCompleted:     l.TerminalCompleted,
+		Summary:               l.Summary,
+	}
+}

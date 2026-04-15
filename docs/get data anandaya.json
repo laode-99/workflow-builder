@@ -1,0 +1,1036 @@
+{
+  "name": "get data",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# Get Data (NEW)",
+        "height": 624,
+        "width": 2544
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -256,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "cd51524b-b6ca-4c96-8028-1fb2aab561c1",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil data 'List' dari output node HTTP Request sebelumnya\n// items[0].json.List mengacu pada array yang ada di screenshot kamu\nconst opportunityList = items[0].json.List;\n\n// 2. Kita lakukan mapping untuk memformat ulang datanya\n// n8n membutuhkan format return berupa array of objects [{json: ...}, {json: ...}]\nreturn opportunityList.map(item => {\n  return {\n    json: {\n      // Ini ID yang kamu cari\n      RelatedProspectId: item.RelatedProspectId,\n      \n      // Saya sarankan bawa juga data lain agar tidak hilang saat diproses node selanjutnya\n      OpportunityId: item.OpportunityId,\n      OpportunityName: item.mx_Custom_1,\n      CreatedOn: item.CreatedOn\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -48
+      ],
+      "id": "07bcd34c-ce9f-45f6-9f1f-0f66ad7bf9b8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.leadsquared.com/v2/OpportunityManagement.svc/Retrieve/BySearchParameter?accessKey=u$ra3055f0e45505ee75a7d5586117d74a2&secretKey=a5a33f66dbe8115b144d9796c2d034a80a86aba6",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"OpportunityEventCode\": 12002,\n    \"AdvancedSearch\": \"{\\\"GrpConOp\\\":\\\"And\\\",\\\"Conditions\\\":[{\\\"Type\\\":\\\"Activity\\\",\\\"ConOp\\\":\\\"and\\\",\\\"RowCondition\\\":[{\\\"SubConOp\\\":\\\"And\\\",\\\"LSO\\\":\\\"ActivityEvent\\\",\\\"LSO_Type\\\":\\\"PAEvent\\\",\\\"Operator\\\":\\\"eq\\\",\\\"RSO\\\":\\\"12002\\\"},{\\\"SubConOp\\\":\\\"And\\\",\\\"LSO\\\":\\\"CreatedOn\\\",\\\"LSO_Type\\\":\\\"DateTime\\\",\\\"Operator\\\":\\\"eq\\\",\\\"RSO\\\":\\\"opt-today\\\"},{\\\"SubConOp\\\":\\\"And\\\",\\\"LSO\\\":\\\"mx_Custom_1\\\",\\\"LSO_Type\\\":\\\"String\\\",\\\"Operator\\\":\\\"eq\\\",\\\"RSO\\\":\\\"Anandaya\\\"}],\\\"IsFilterCondition\\\":true}],\\\"QueryTimeZone\\\":\\\"SE Asia Standard Time\\\"}\",\n    \"Paging\": {\n        \"PageIndex\": 1,\n        \"PageSize\": 100\n    },\n    \"Sorting\": {\n        \"ColumnName\": \"CreatedOn\",\n        \"Direction\": \"1\"\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -16,
+        -48
+      ],
+      "id": "a1201e61-826b-44bf-a8e5-45f9b3067816",
+      "name": "HTTP Request20"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.leadsquared.com/v2/LeadManagement.svc/Leads.GetById?accessKey=u$ra3055f0e45505ee75a7d5586117d74a2&secretKey=a5a33f66dbe8115b144d9796c2d034a80a86aba6&id={{ $json.RelatedProspectId }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        336,
+        -48
+      ],
+      "id": "8a5e6abe-4012-4d0f-90ec-5e5639054308",
+      "name": "HTTP Request21"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "654e3183-96da-4895-b1f3-0f5d399df756",
+              "name": "id",
+              "value": "={{ $('Code in JavaScript').item.json.OpportunityId }}",
+              "type": "string"
+            },
+            {
+              "id": "e7eac766-6a72-4299-8d79-4b35fc2ee1a1",
+              "name": "phone",
+              "value": "={{ $json.Phone.replace(/\\D/g, '').replace(/^0/, '62') }}",
+              "type": "string"
+            },
+            {
+              "id": "e5f91033-3c75-4ae6-9e11-0db32f1498ff",
+              "name": "name",
+              "value": "={{ $json.FirstName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        -48
+      ],
+      "id": "22bc3f8e-51eb-4c75-a48c-d4c4a30fbf09",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        256,
+        160
+      ],
+      "id": "ab3680a9-7fe8-4eee-a63b-9fb6188e87ac",
+      "name": "cek nomor yg sudah ada1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "=*/1 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        -48
+      ],
+      "id": "5ae73e7a-526a-45f8-8e29-0e28a8fa27eb",
+      "name": "tiap 1 menit1"
+    },
+    {
+      "parameters": {
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "id",
+              "field2": "id"
+            }
+          ]
+        },
+        "resolve": "preferInput1",
+        "fuzzyCompare": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.compareDatasets",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        -16
+      ],
+      "id": "0c82ccb6-f81a-4e99-b969-063a360c6e0b",
+      "name": "Compare Datasets"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "654e3183-96da-4895-b1f3-0f5d399df756",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "e7eac766-6a72-4299-8d79-4b35fc2ee1a1",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "e5f91033-3c75-4ae6-9e11-0db32f1498ff",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        160
+      ],
+      "id": "0fb65ace-e43e-412b-991f-266133c8a9cd",
+      "name": "Edit Fields4"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('if name empty1').item.json.id }}",
+            "phone": "={{ $('if name empty1').item.json.phone }}",
+            "name": "={{ $('if name empty1').item.json.name }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "chat_history",
+              "displayName": "chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "chat_total",
+              "displayName": "chat_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "spam",
+              "displayName": "spam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "conversation",
+              "displayName": "conversation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "last_chat",
+              "displayName": "last_chat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "reset_remarks",
+              "displayName": "reset_remarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2064,
+        80
+      ],
+      "id": "3d3e62fe-ebc6-4a14-856c-11c50daf7ff1",
+      "name": "Insert or update rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fda2ae05-9508-4e23-9d9b-2c2aea827a6f",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        16
+      ],
+      "id": "a15eb1a7-8d7c-47c9-9331-cb784fee75f3",
+      "name": "if name empty1"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "phone": "={{ $json.phone }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1776,
+        -64
+      ],
+      "id": "7719a9ea-a2d6-44c6-9a7a-dfc0693c63bc",
+      "name": "update without name1",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.id }}",
+            "phone": "={{ $json.phone }}",
+            "name": "={{ $json.name }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1776,
+        64
+      ],
+      "id": "c1274890-f08a-4550-8c80-86201129c854",
+      "name": "update/append with name1",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1104,
+        16
+      ],
+      "id": "ecd94b2f-15d8-4d3c-8838-643272fbe458",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1312,
+        16
+      ],
+      "id": "678512c7-b3c9-4106-88ec-790623c4c17e",
+      "name": "Loop Over Items5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request21",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request20": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request21": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Compare Datasets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cek nomor yg sudah ada1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tiap 1 menit1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request20",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "cek nomor yg sudah ada1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare Datasets": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields4": {
+      "main": [
+        [
+          {
+            "node": "Compare Datasets",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Insert or update rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if name empty1": {
+      "main": [
+        [
+          {
+            "node": "update without name1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "update/append with name1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update without name1": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update/append with name1": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items5": {
+      "main": [
+        [],
+        [
+          {
+            "node": "if name empty1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0fb1583b-a258-4721-8fed-5c88dfa4819b",
+  "meta": {
+    "instanceId": "2ea8369907bebad3abb942d1832fd0be7e6add33c61c3b8cabc0b20bb298f665"
+  },
+  "id": "oDlNkggxCDMS11V4",
+  "tags": []
+}

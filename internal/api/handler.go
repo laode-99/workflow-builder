@@ -34,7 +34,15 @@ func NewHandler(repo *Repo, asynqClient *asynq.Client, rdb *redis.Client, encKey
 
 // RegisterRoutes wires all routes
 func (h *Handler) RegisterRoutes(app *fiber.App) {
-	api := app.Group("/api")
+	// Public Routes (Webhooks)
+	// These implement their own security (HMAC or secret)
+	public := app.Group("/api/webhooks")
+	public.Post("/leadflow/retell", h.HandleLeadflowRetell)
+	public.Post("/leadflow/chat-inbound/:slug", h.HandleChatInbound)
+	public.All("/*", h.HandleWebhook)
+	
+	// Protected Routes (Admin & Management)
+	api := app.Group("/api", AdminAuth())
 
 	// Registry
 	api.Get("/registry", h.GetRegistry)
@@ -42,6 +50,8 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	// Businesses
 	api.Get("/businesses", h.ListBusinesses)
 	api.Post("/businesses", h.CreateBusiness)
+	api.Get("/businesses/:id", h.GetBusiness)
+	api.Put("/businesses/:id", h.UpdateBusiness)
 	api.Delete("/businesses/:id", h.DeleteBusiness)
 
 	// Workflows
@@ -54,24 +64,44 @@ func (h *Handler) RegisterRoutes(app *fiber.App) {
 	api.Delete("/workflows/:id", h.DeleteWorkflowHandler)
 	api.Post("/workflows/:id/trigger", h.TriggerWorkflow)
 	api.Post("/workflows/:id/stop", h.StopWorkflow)
+	api.Get("/workflows/:id/logic", h.GetWorkflowLogic)
+	api.Post("/workflows/n8n/callback", h.HandleN8NCallback)
 
 	// Credentials
-	api.Get("/businesses/:bid/credentials", h.ListCredentials)
-	api.Post("/businesses/:bid/credentials", h.CreateCredential)
+	api.Get("/credentials", h.ListCredentials)
+	api.Post("/credentials", h.CreateCredential)
 	api.Delete("/credentials/:id", h.DeleteCredential)
 	api.Post("/credentials/:id/verify", h.VerifyCredential)
 	api.Post("/credentials/:id/preview", h.PreviewCredentialData)
 
+	// Admin: Prompts
+	api.Get("/businesses/:bid/prompts", h.ListPrompts)
+	api.Post("/businesses/:bid/prompts", h.CreatePrompt)
+
+	// Admin: Sales
+	api.Get("/businesses/:bid/sales", h.ListSales)
+	api.Post("/businesses/:bid/sales", h.UpsertSales)
+	api.Patch("/sales/:id/toggle", h.ToggleSales)
+
+	// Admin: Leads
+	api.Get("/businesses/:bid/leads", h.ListLeadsExtended)
+	api.Get("/leads/:id/messages", h.ListMessages)
+
 	// Executions
 	api.Get("/businesses/:bid/executions", h.ListExecutionsByBusiness)
 	api.Get("/workflows/:id/executions", h.ListExecutions)
+	api.Get("/executions/:id", h.GetExecution)
 	api.Get("/executions/:id/logs", h.ListExecutionLogs)
-	api.Get("/executions/:id/status", h.GetExecutionStatus) // New Endpoint for n8n to check
-	api.Get("/workflows/:id/logic", h.GetWorkflowLogic)
-	api.Post("/workflows/n8n/callback", h.HandleN8NCallback)
+}
 
-	// Webhooks (catch-all)
-	app.All("/webhooks/*", h.HandleWebhook)
+func (h *Handler) HandleLeadflowRetell(c *fiber.Ctx) error {
+	// Implemented in webhooks_leadflow.go
+	return h.leadflowRetell(c)
+}
+
+func (h *Handler) HandleChatInbound(c *fiber.Ctx) error {
+	// Implemented in webhooks_leadflow.go
+	return h.chatInbound(c)
 }
 
 // ==================== Registry ====================
@@ -618,6 +648,11 @@ func (h *Handler) GetWorkflowLogic(c *fiber.Ctx) error {
 
 	return c.JSON(fiber.Map{"content": string(content)})
 }
+
+// Placeholder stubs for project/execution management
+func (h *Handler) GetBusiness(c *fiber.Ctx) error    { return c.SendStatus(501) }
+func (h *Handler) UpdateBusiness(c *fiber.Ctx) error { return c.SendStatus(501) }
+func (h *Handler) GetExecution(c *fiber.Ctx) error   { return c.SendStatus(501) }
 
 // ==================== Webhooks ====================
 

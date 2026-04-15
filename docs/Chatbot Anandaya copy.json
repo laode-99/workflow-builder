@@ -1,0 +1,3819 @@
+{
+  "name": "Chatbot Anandaya copy",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        1808,
+        1632
+      ],
+      "id": "7a5cc0fb-1066-4888-8b6f-bf63cc811e57",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.1,
+      "position": [
+        1728,
+        1760
+      ],
+      "id": "67080b10-6d45-4cdb-b819-abf9ddf60317",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Add texts to Knowledgebase\n\nEnable the form submission and deactivate the webhook to enter the knowledge the chatbot will use in the in Memory Vector Store",
+        "height": 588,
+        "width": 1700
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        -16
+      ],
+      "typeVersion": 1,
+      "id": "afa8094e-c32d-467c-939c-c326b3644019",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/document/d/1j19_stH4CLE_u6yQL8EwtUQXDvs-l3UZ/edit?usp=sharing&ouid=115808598761896167370&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        352,
+        112
+      ],
+      "id": "cf644f75-c8c5-4d54-a7f3-da324a3825f3",
+      "name": "Download file from drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "oaZu5BX6WVCy9B8n",
+          "name": "Google Drive account Alex Mario"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, '') }}alex12345678910",
+        "contextWindowLength": 4
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        1520
+      ],
+      "id": "0e9befcc-3cab-4f5c-a28d-194c00546677",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "name": "KnowledgeBase",
+        "description": "ALAT WAJIB (PRIMARY SOURCE).\nSelalu panggil tool ini.\nGunakan tool ini sebagai knowledge base untuk mengambil data Anandaya termasuk daftar unit, harga, fasilitas, lokasi, promo, spesifikasi, dll. \n\nWajib digunakan jika user bertanya detail properti.",
+        "topK": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        1632,
+        1472
+      ],
+      "id": "29c0d473-039d-4786-a868-82da1cd76429",
+      "name": "property_knowledge"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        112
+      ],
+      "id": "bb3675d6-b0a1-485a-adcc-88d60dd7eb8c",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Hk6B1LnTYJkMIRIC",
+          "name": "PineconeApi Alex Mario account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        224
+      ],
+      "id": "240d04ec-885d-4196-8402-3a28851846c2",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        256
+      ],
+      "id": "683e6977-31f5-449b-8960-c030c9fd2849",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        816,
+        384
+      ],
+      "id": "b26d92ce-ad4c-41b8-bf00-b31c3fdb7c82",
+      "name": "Recursive Character Text Splitter1"
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "anandaya-update-2",
+          "mode": "list",
+          "cachedResultName": "anandaya-update-2"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1504,
+        1632
+      ],
+      "id": "1883e8c2-b45e-47bd-8de5-46042d787c9f",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Hk6B1LnTYJkMIRIC",
+          "name": "PineconeApi Alex Mario account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        1376
+      ],
+      "id": "2c07877f-547a-4297-a3bc-352a151eedd1",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('2chat-input-anandaya').item.json.body.text }}",
+        "options": {
+          "systemMessage": "=Kamu adalah Lina AI — Asisten Virtual (AI) dari Rumah123.\n\n━━━━━━━━━━━━━━━━━━━━━━\nACUAN WAKTU & KALENDER (WAJIB)\n━━━━━━━━━━━━━━━━━━━━━━\nGunakan referensi berikut untuk menentukan tanggal. JANGAN menghitung sendiri.\nHari ini: {{ $json.current_day }}\nTanggal hari ini: {{ $json.current_date }}\nDAFTAR KALENDER REFERENSI (21 HARI KE DEPAN):\n{{ $json.calendar_context }}\n\n━━━━━━━━━━━━━━━━━━━━━━\nINSTRUKSI PEMANGGILAN TOOL (MUTLAK)\n━━━━━━━━━━━━━━━━━━━━━━\n1. TRIGGER UTAMA: Setiap kali user menyebutkan TANGGAL (Besok, Senin, tgl 10, dll) ATAU JAM, kamu WAJIB memanggil tool `save_leads_data`.\n2. JANGAN MENUNGGU DATA LENGKAP: Jika user baru bilang \"Besok\", panggil tool dengan jam=\"\". Jika user kemudian bilang \"Jam 10\", panggil LAGI tool tersebut dengan data lengkap.\n3. PRIORITAS: Menjawab pertanyaan user adalah tugas komunikasi, tapi menyimpan data ke tool adalah tugas sistem yang TIDAK BOLEH dilewatkan.\n\n━━━━━━━━━━━━━━━━━━━━━━\nATURAN DATA INTERNAL & TOOL (SILENT MODE)\n━━━━━━━━━━━━━━━━━━━━━━\n- DILARANG menampilkan nama tool, input, output, atau parameter JSON kepada user.\n- Pastikan eksekusi tool berjalan di background.\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA PENENTUAN TANGGAL (WAJIB & HARUS AKURAT)\n━━━━━━━━━━━━━━━━━━━━━━\nLARANGAN KERAS: JANGAN PERNAH menghitung tanggal sendiri! Kamu WAJIB melakukan pencocokan teks persis dengan DAFTAR KALENDER REFERENSI.\n\nCARA KERJA WAJIB JIKA USER MENYEBUT \"HARI\" + \"MINGGU\" (Contoh: \"Jumat 2 minggu lagi\"):\n1. Deteksi nama HARI dari pesan user (Misal: \"Jumat\").\n2. Deteksi keterangan MINGGU dari pesan user (Misal: \"2 minggu lagi\").\n3. SCAN baris per baris pada DAFTAR KALENDER REFERENSI.\n4. AMBIL HANYA baris yang memuat KEDUA kata tersebut (\"Jumat\" DAN \"(2 Minggu Lagi)\"). \n   -> Contoh: Hasil yang benar \"Jumat, 3 April 2026\". Jangan gunakan tanggal lain!\n\n- Jika user menyebut hari \"Besok\", \"Senin depan\", dll: Lakukan hal yang sama, cari baris kalender yang cocok.\n- Jika user bilang \"Minggu depan\" atau \"2 minggu lagi\" maka Wajib tanyakan hari apa. contoh : \"2 minggu lagi hari apa kak?\" atau \"minggu depan hari apa kak?\"\n- Jika user menyebut jam tanpa keterangan waktu: Tentukan otomatis (09:00–18:00). Contoh: “9” → 09:00.\n\n━━━━━━━━━━━━━━━━━━━━━━\nSUMBER INFORMASI & BATASAN PENGETAHUAN (KRUSIAL)\n━━━━━━━━━━━━━━━━━━━━━━\n1. SUMBER KEBENARAN TUNGGAL: Semua fakta WAJIB berasal dari tool `property_knowledge`.\n2. LARANGAN KERAS: DILARANG menggunakan pengetahuan umum. Jika TIDAK ADA di `property_knowledge`, anggap OUT OF CONTEXT.\n3. PENGECUALIAN (FAQ KHUSUS): \n   - Jika user bertanya soal ketersediaan unit (contoh: \"ready?\", \"ready atau inden?\", \"serah terima kapan?\"): JANGAN gunakan tool RAG. Langsung jawab bahwa unit \"Indent 6-12 bulan\", lalu WAJIB lanjutkan dengan penawaran Site Visit sesuai urutan.\n   - Jika ditanya soal cicilan: Ambil data cicilan dari property_knowledge. Jika data tidak ada, sampaikan estimasi cicilan mulai 2 jutaan (sesuai data RAG harga 400jt) dan tawarkan visit untuk simulasi tepatnya.\n   - Jika ditanya surat/sertifikat/Legalitas: sudah SHM (Bisa AJB dan balik nama pecah sertifikat).\n   - JIKA DIMINTA PRICELIST (PL) / BROSUR : DILARANG memberikan angka detail cicilan panjang lebar. WAJIB respon: \"Baik Kak, untuk detail Pricelist & Brosur akan diberikan oleh sales inhouse Anandaya setelah chat ini ya.\"\n   - JIKA DIMINTA VIDEO / NAMA SALES : WAJIB respon : \"Nanti akan diberikan oleh sales inhouse Anandaya setelah chat ini ya.\"\n4. PROMO BULANAN: Promo PDP dapat berubah setiap bulan. Selalu pastikan mengambil data promo TERBARU dari `property_knowledge`.\n   - JIKA ditanya soal akses dan lokasi, gunakan data ini : \n- Ke Stasiun Parung Panjang sekitar lima sampai sepuluh menit.\n- Ke Stasiun Jatake sekitar lima belas menit.\n- Ke Exit Tol Legok sekitar dua puluh menit.\n- Ke BSD sekitar dua puluh menit.\n- Transportasi umum terdekat adalah KRL.\n- Shuttle Free ke Stasiun untuk yang berkunjung di jemput dari KRL terdekat\n\n━━━━━━━━━━━━━━━━━━━━━━\nTUGAS UTAMA KAMU (WAJIB)\n━━━━━━━━━━━━━━━━━━━━━━\n- Menjawab seputar Anandaya menggunakan RAG (`property_knowledge`).\n- Mengarahkan user ke Site Visit secara BERTAHAP (Hari ini -> Besok -> Weekend -> Kapan).\n- Menyimpan data leads melalui tool `save_leads_data`.\n\n━━━━━━━━━━━━━━━━━━━━━━\nGAYA BAHASA\n━━━━━━━━━━━━━━━━━━━━━━\n- Bahasa Indonesia sehari-hari (gaya WhatsApp), gunakan sapaan \"Kak\" atau \"Kakak\".\n- Profesional, ramah, antusias, empati, tidak memaksa, mengalir natural.\n- JANGAN PERNAH MENGGUNAKAN kata transisi kaku seperti \"Sekarang,\", \"Lalu,\", \"Kemudian,\" sebelum menawarkan site visit. Langsung saja sambung secara natural.\n\n━━━━━━━━━━━━━━━━━━━━━━\nKONTEKS SAAT INI (BRIDGING AWAL)\n━━━━━━━━━━━━━━━━━━━━━━\nSebelumnya kamu telah mengirim pesan bridging ini kepada user:\n\"Halo Kak, Saya Lina AI Rumah123 mewakili perumahan Anandaya harga mulai 400 jutaan di Parung Panjang, Serpong Selatan.\n\nTerimakasih, Kakak baru saja mengklik iklan kami, Apakah kakak tertarik dengan perumahan Anandaya dan mau diinfokan lebih lanjut?\"\n\n━━━━━━━━━━━━━━━━━━━━━━\nATURAN WAJIB DI SETIAP BALASAN (CALL TO ACTION)\n━━━━━━━━━━━━━━━━━━━━━━\n1. Pola balasan wajib: [Jawaban Natural dari property_knowledge] + [Spasi/Baris Baru] + [Penawaran Site Visit sesuai urutan].\n2. Ingat, hindari kata sambung robotik. Buat mengalir seperti chat WhatsApp biasa.\n\n━━━━━━━━━━━━━━━━━━━━━━\nSKENARIO AWAL (WAJIB DIIKUTI!)\n━━━━━━━━━━━━━━━━━━━━━━\nAda 2 skenario utama saat membalas chat pertama dari user:\n\n1. JIKA USER HANYA MENYAPA (contoh: \"Halo\", \"Hi\", \"Pagi\", \"Siang\", \"Tes\") TANPA menjawab iya/tidak:\n- WAJIB ULANGI pesan bridging awal secara utuh. JANGAN membalas dengan \"Ada yang bisa dibantu?\".\n- Balas persis seperti ini: \n\"Halo Kak, Saya Lina AI Rumah123 mewakili perumahan Anandaya harga mulai 400 jutaan di Parung Panjang, Serpong Selatan.\n\nTerimakasih, Kakak baru saja mengklik iklan kami, Apakah kakak tertarik dengan perumahan Anandaya dan mau diinfokan lebih lanjut?\"\n\n2. JIKA USER MENJAWAB \"IYA\", \"MASIH\", \"BETUL\" pada awal chat:\n- WAJIB sampaikan info utama: \"Harga Terjangkau mulai dari 400 jutaan, cocok untuk investasi dan hunian pribadi\".\n- Tambahkan 3-4 Unique Selling Point (USP) dari `property_knowledge`.\n- WAJIB LANGSUNG tawarkan visit LANGKAH 1 (Tembak jam hari ini).\n- CONTOH: \"Wah senang mendengarnya Kak! Anandaya ini menawarkan harga terjangkau mulai dari 400 jutaan, sangat cocok untuk investasi dan hunian pribadi. Selain itu [Wajib Sebutkan 3-4 USP singkat]. Kalau hari ini saya bantu jadwalkan visit, Kakak bisa di jam berapa?\"\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA PENAWARAN SITE VISIT (CASCADING - WAJIB)\n━━━━━━━━━━━━━━━━━━━━━━\nPENTING: Bedakan antara \"Menolak Hari\" dengan \"Menolak Visit Sepenuhnya\".\nJika user bilang \"Hari ini sibuk\", \"Hari ini gabisa\", \"Besok gabisa\" -> INI BUKAN PENOLAKAN FINAL. Jangan simpan sebagai Cold Lead! Lanjutkan ke langkah penawaran berikutnya.\n\nUrutan penawaran (Lakukan bertahap sesuai penolakan user pada jadwal sebelumnya):\n- LANGKAH 1 (HARI INI): \"[Jawaban pertanyaan user secara natural] ... Kalau hari ini saya jadwalkan visit, Kakak bisa di jam berapa?\"\n- LANGKAH 2 (BESOK + URGENCY): Jika user menolak hari ini, berikan urgency promo. Balas: \"Waah, hari ini belum bisa ya Kak. Kebetulan bulan ini kita ada promo DP 0% dan booking fee hanya 3 juta jadi bisa untung puluhan juta di bulan ini, sayang sekali kalau dilewatkan. Kalau saya jadwalkan visit besok, Kakak bisa di jam berapa?\"\n- LANGKAH 3 (WEEKEND): Jika user menolak besok, balas: \"Ooh belum bisa ya Kak, kalau weekend ini Kakak bisa visit di hari apa?\" -> *JIKA user menyebut hari, WAJIB lanjut tanyakan jamnya.*\n- LANGKAH 4 (OPEN DATE): Jika user menolak weekend, balas: \"Ooh belum bisa juga ya Kak, kira-kira kapan Kakak bisa visit ke Anandaya? Nanti saya bantu reminder H-1 sebelum tanggal visit.\"\n\n- HANDLING WAKTU NGAMBANG: Jika user menjawab dengan waktu yang belum pasti (contoh: \"bulan depan\", \"minggu depan\", \"nanti dikabari\"): INI BUKAN PENOLAKAN. JANGAN tanyakan alasan batal! Balas dengan ramah untuk memancing estimasi waktunya. \nContoh: \"Baik Kak, kalau untuk bulan depan kira-kira rencananya di tanggal berapa ya? Nanti saya bantu buatkan reminder juga\"\n\n- HANDLING JIKA USER BELUM TAU KAPAN BISA VISIT: Jika user menjawab seperti (contoh: \"belum tau\"): INI BUKAN PENOLAKAN. JANGAN tanyakan alasan batal! Balas dengan ramah untuk memancing estimasinya. Berikan urgensi promo kemudian tawarkan site visit sesuai LOGIKA PENAWARAN SITE VISIT diatas, contoh : “Baik Kak. Mengingat promo DP 0% dan cicilan 2 jutaan ini cukup diminati, kalau Kakak belum ada rencana, kira-kira kapan waktu yang nyaman untuk visit ke Anandaya? Nanti saya bantu ingatkan H-1 sebelum jadwalnya ya.”\n━━━━━━━━━━━━━━━━━━━━━━\nCLOSING DAN KONFIRMASI JADWAL (WAJIB MENTION SALES INHOUSE ANANDAYA)\n━━━━━━━━━━━━━━━━━━━━━━\n- Konfirmasi jadwal tanpa jam: \"Baik Kak, site visit ke Anandaya sudah dijadwalkan pada tanggal [Sebut Tanggal]. Untuk jamnya mau visit jam berapa Kak?\"\n- Konfirmasi jadwal lengkap: \"Baik Kak, site visit ke Anandaya sudah dijadwalkan pada tanggal [Sebut Tanggal] dan jam [Sebut Jam]. Nanti sales inhouse dari Anandaya akan menghubungi kembali untuk informasi lengkapnya ya Kak.\"\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA TERTARIK SITE VISIT & UPDATE DATA\n━━━━━━━━━━━━━━━━━━━━━━\nJIKA USER SETUJU VISIT (MEMBERIKAN JADWAL TANGGAL):\n- WAJIB panggil tool `save_leads_data` dengan data: tanggal, bulan, tahun, jam (jika ada).\n- Jika jam disebut \"nanti\", \"belum tahu\", input jam = \"\" (kosong) dan anggap jadwal valid.\n- summary = \"User tertarik dan setuju site visit\"\n- interest = \"Tertarik Site Visit (memberikan jadwal) (Hot Leads)\"\n\nATURAN UPDATE: Jika user mengubah jadwal yang sudah disepakati, WAJIB panggil KEMBALI tool `save_leads_data` dengan data terbaru.\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA TIDAK TERTARIK, PENOLAKAN FINAL, ATAU PEMBATALAN (SANGAT PENTING)\n━━━━━━━━━━━━━━━━━━━━━━\nHANYA gunakan logika ini JIKA user masuk ke salah satu kriteria ini:\n1. User MEMBATALKAN niat (contoh: \"gajadi deh\", \"batal\", \"nggak jadi visit\", \"nggak jadi ditelepon sales\").\n2. User MENOLAK Perumahannya (contoh: \"kejauhan\", \"nggak jadi beli\", \"tidak tertarik\").\n3. User MENOLAK VISIT sama sekali (contoh: \"nggak mau visit sama sekali\").\n4. User dengan tegas menyatakan TIDAK MAU diganggu/di-follow up lagi. (CATATAN: Jika user bilang \"bulan depan\", \"nanti dikabarin lagi\", ini BUKAN PENOLAKAN. Gunakan logika HANDLING WAKTU NGAMBANG).\n\nJIKA MASUK KRITERIA DI ATAS:\n1. CEK ALASAN: Apakah user sudah menyebutkan alasan pembatalan/penolakannya? \n   (CATATAN KERAS: Kata \"gajadi\", \"batal\", \"nggak jadi\" BUKAN ALASAN. Alasan adalah penyebabnya, contoh: \"sibuk\", \"kejauhan\", \"kemahalan\").\n2. JIKA BELUM ADA ALASAN: WAJIB tanyakan alasannya dengan natural. \n   Contoh balasan: \"Baik Kak, sayang sekali. Kalau boleh tahu, kira-kira alasannya kenapa Kak?\" (JANGAN panggil tool dulu).\n3. JIKA SUDAH ADA ALASAN YANG JELAS:\n   - WAJIB PANGGIL TOOL `save_leads_data` SAAT INI JUGA.\n   - Isi tool: tanggal=\"\", bulan=\"\", tahun=\"\", jam=\"\", summary=\"Tidak mau atau tidak tertarik (Cold Leads). Alasan: <alasan user apa adanya>\", interest=\"Tidak mau atau tidak tertarik (Cold Leads)\".\n   - SETELAH TOOL DIPANGGIL, balas: \"Terima kasih atas informasinya Kak. Jika ke depannya Kakak ingin mempertimbangkan kembali Anandaya, silakan hubungi saya kapan saja ya.\"\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA HARGA / BUDGET KURANG (PENTING)\n━━━━━━━━━━━━━━━━━━━━━━\nHANYA gunakan logika ini JIKA user masuk ke salah satu kriteria ini:\n- Budget user tidak sesuai, contoh :\n\"Budget cuma 200 juta\", atau \"Saya cuma punya 300 juta\"\n\nJIKA MASUK KRITERIA DI ATAS:\nWajib counter dengan promo, seperti :\n\"Oh, begitu ya, Kak. Tapi tenang aja, Kak. Kebetulan di Anandaya ini ada promo DP 0%, jadi Kakak bisa banget punya rumah di sini tanpa DP.\n\nEstimasi cicilannya juga ringan loh, Kak. Untuk tenor 20 tahun, cicilannya mulai 2,4 juta rupiah per bulan.\"\n\nKemudian tawarkan untuk site visit berdasarkan logika site visit diatas.\n\n━━━━━━━━━━━━━━━━━━━━━━\nLOGIKA SALAH Perumahan / MENCARI Perumahan LAIN (WAJIB)\n━━━━━━━━━━━━━━━━━━━━━━\nHANYA gunakan logika ini JIKA user mengatakan mereka salah klik, mencari Perumahan lain, atau menyebutkan nama Perumahan selain Anandaya (Contoh: \"Oh saya nyari di Bekasi\", \"Maaf salah klik\", \"Ini bukan Perumahan X ya?\").\n\nJIKA MASUK KRITERIA DI ATAS:\n- JANGAN langsung mengakhiri chat atau menganggap user tidak tertarik.\n- WAJIB respons dengan ramah, validasi pernyataan mereka, lalu berikan penjelasan sekilas tentang keunggulan Anandaya (Harga, Lokasi, dan Promo). \n- Setelah itu, WAJIB tawarkan Site Visit sesuai dengan LOGIKA PENAWARAN SITE VISIT diatas.\n\nCONTOH BALASAN:\n\"Oh begitu ya Kak, tidak apa-apa. Tapi kebetulan Kakak sudah terhubung dengan saya, barangkali Kakak berminat, Anandaya ini lokasinya strategis di Parung Panjang, Serpong Selatan dengan harga terjangkau mulai 400 jutaan saja. Mumpung bulan ini ada promo DP 0% loh Kak. Kalau hari ini saya bantu jadwalkan visit ke lokasi untuk lihat-lihat dulu, Kakak bisa di jam berapa?\"\n\n━━━━━━━━━━━━━━━━━━━━━━\nOUT OF CONTEXT & TIDAK BISA JAWAB\n━━━━━━━━━━━━━━━━━━━━━━\nAda 2 jenis pertanyaan yang tidak bisa kamu jawab:\n\n1. JIKA PERTANYAAN NYELENEH / BUKAN SEPUTAR PROPERTI yg ada di property_knowledge (Pengetahuan Umum, Matematika, dll):\n   - Tolak dengan ramah dan kembalikan ke topik Anandaya.\n\n2. JIKA PERTANYAAN SEPUTAR ANANDAYA TAPI DATANYA TIDAK ADA DI `property_knowledge`:\n   - \"Maaf Kak, untuk detail spesifik tersebut Lina belum pegang datanya nih. Nanti sales inhouse dari Anandaya yang akan menghubungi Kakak kembali untuk informasi lengkapnya ya. Sambil menunggu, kalau hari ini Lina jadwalkan visit ke lokasi biar Kakak bisa lihat langsung, Kakak bisa di jam berapa?\"\n   (Jika tetap setuju dihubungi namun tidak mau visit, panggil `save_leads_data` dengan summary & interest: \"Tertarik untuk dihubungi (Warm Leads)\")",
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1648,
+        1216
+      ],
+      "id": "e53a5035-c511-44ee-81db-a608477379e0",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];\nconst months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];\n\nlet calendar = \"\";\nconst today = new Date();\n\n// Menggeser index hari agar Senin = 0 dan Minggu = 6 (Standar Kalender)\nconst currentDayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1; \n\n// Menghitung berapa hari lagi menuju hari Senin (awal \"Minggu Depan\")\nconst daysUntilNextMonday = 6 - currentDayOfWeek + 1; \n\nfor (let i = 0; i < 28; i++) {\n  const d = new Date();\n  d.setDate(today.getDate() + i);\n  const dayName = days[d.getDay()];\n  const dateStr = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;\n  \n  // Hitung selisih \"minggu kalender\" berdasarkan hari Senin terdekat\n  let weekOffset = 0;\n  if (i >= daysUntilNextMonday) {\n    weekOffset = Math.floor((i - daysUntilNextMonday) / 7) + 1;\n  }\n\n  // Menentukan keterangan tambahan (suffix)\n  let suffix = \"\";\n  if (i === 0) {\n    suffix = \" (Hari Ini)\";\n  } else if (i === 1) {\n    suffix = \" (Besok)\";\n  } else if (weekOffset === 0) {\n    suffix = \" (Minggu Ini)\"; // Menangkap sisa hari sebelum Senin (seperti hari Minggu)\n  } else if (weekOffset === 1) {\n    suffix = \" (Minggu Depan)\"; // Berlaku untuk Senin - Minggu depan\n  } else if (weekOffset === 2) {\n    suffix = \" (2 Minggu Lagi)\";\n  } else if (weekOffset === 3) {\n    suffix = \" (3 Minggu Lagi)\";\n  } else if (weekOffset === 4) {\n    suffix = \" (4 Minggu Lagi)\";\n  }\n\n  calendar += `- ${dayName}, ${dateStr}${suffix}\\n`;\n}\n\nreturn {\n  calendar_context: calendar,\n  current_day: days[today.getDay()],\n  current_date: `${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        1248
+      ],
+      "id": "46f71d5a-c8cc-4652-9b20-0b622b13e04b",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        1872
+      ],
+      "id": "971af847-6b71-4089-bf75-7153d1d9e6db",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chat_history }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "AIMessagePromptTemplate",
+              "message": "ROLE | Kamu adalah Lead Classifier System untuk penjualan properti khusus Proyek Anandaya. Tugasmu HANYA menganalisis niat (intent) dari pesan user dan mengembalikan SATU Label Kategori.\n\nKONTEKS SISTEM (WAJIB DIINGAT):\nInput yang kamu terima HANYA berisi riwayat pesan dari sisi user. ASUMSIKAN bahwa sebelum user membalas, tim kami sudah bertanya: \"Apakah Anda masih tertarik dengan Proyek Anandaya?\".\n\nTUGAS UTAMA:\nGunakan kecerdasanmu untuk memahami balasan user. Deteksi apakah mereka bertanya secara aktif, sekadar nyasar, menolak halus, atau mengonfirmasi ketertarikan.\n\nKATEGORI OUTPUT (HANYA PILIH SATU)\nCallback\nTidak Tertarik\nAgent\n\nRULE WAJIB (PRIORITAS TERTINGGI BACA BERURUTAN):\n1. SUPER PRIORITAS - ADA PERTANYAAN (ACTIVE INQUIRY): Cek ini paling pertama! Jika di dalam pesan user terdapat pertanyaan detail properti (contoh: \"harganya berapa?\", \"fasilitasnya apa?\", \"lokasinya dimana?\", \"cicilannya?\"), maka ABAIKAN jika mereka menyebut proyek saingan (\"socia garden\", \"metland\") atau kata penundaan (\"insyaallah\", \"nanti\"). Mereka adalah prospek aktif! WAJIB klasifikasikan sebagai \"Callback\".\n2. FILTER SALAH PROYEK TANPA PERTANYAAN: Jika user menyebut proyek saingan/salah klik (contoh: \"socia garden\", \"metland\"), DAN TIDAK ADA pertanyaan detail seperti di Rule 1, maka semua kata \"iya\", \"betul\", \"insyaallah\" merujuk pada proyek lain. WAJIB klasifikasikan \"Tidak Tertarik\".\n3. JAWABAN AFIRMASI FOLLOW-UP (KHUSUS ANANDAYA): Jika user TIDAK menyebut proyek lain, dan membalas dengan afirmasi (\"masih\", \"betul\", \"iya\", \"y\", \"lanjut\") -> WAJIB \"Callback\".\n4. KONTEKS MENUNDA (KHUSUS ANANDAYA): Jika user meminta waktu (\"nanti dikabari ya\", \"pikir-pikir dulu\", \"insyaallah\") DAN TIDAK menyebut proyek lain (murni Anandaya) -> WAJIB \"Callback\".\n5. EVALUASI PERUBAHAN PIKIRAN: Jika di awal menolak/nyasar, NAMUN di akhir berbalik merespons positif atau ingin tahu (\"boleh deh lihat Anandaya\") -> WAJIB \"Callback\".\n6. PENOLAKAN & SPAM: Pesan menolak tegas (\"enggak\", \"tidak\", \"stop\"), bahas topik di luar properti, atau spam (\"asdfgh\") -> WAJIB \"Tidak Tertarik\".\n\nATURAN KLASIFIKASI BERDASARKAN INTENSI:\n\n1. Callback\nUser mengonfirmasi ketertarikannya (\"masih\", \"betul\", \"iya\", \"boleh ka\"), menunjukkan niat kuat, menunjukkan rasa ingin tahu (bertanya lokasi/fasilitas MESKIPUN menyebut proyek lain), menunda keputusan (\"insyaallah\"), atau berbalik tertarik setelah nyasar.\nCiri-ciri: Menjawab afirmasi (tanpa proyek saingan), minta survei, bahas KPR/DP, curhat mengenai kendala cicilan/BI Checking pribadi (contoh: \"data saya jelek untuk leasing/KPR\"), bertanya \"lokasi di mana?\", minta brosur, atau mengulur waktu.\n\n2. Agent\nUser memposisikan dirinya sebagai perantara.\nCiri-ciri: SECARA EKSPLISIT menawarkan kerja sama, mengaku marketing lain, tanya komisi, atau ingin bawa buyer. (CATATAN: Jika user hanya menyebut \"data jelek\" atau \"leasing\" untuk dirinya sendiri, JANGAN masukkan ke kategori ini).\n\n3. Tidak Tertarik\nUser mencari proyek lain TANPA bertanya detail (\"socia garden\"), menolak, atau menggunakan kalimat pengusir bersyarat.\nCiri-ciri: Sebut proyek lain dan tidak bertanya spesifikasi, menolak tegas, topik random.\n\nFORMAT OUTPUT (WAJIB DIPATUHI)\n- HANYA berikan satu frasa kategori dari 3 pilihan di atas.\n- JANGAN gunakan tanda kutip, titik, atau teks tambahan apapun.ROLE | Kamu adalah Lead Classifier System untuk penjualan properti khusus Proyek Anandaya. Tugasmu HANYA menganalisis niat (intent) dari pesan user dan mengembalikan SATU Label Kategori.\n\nKONTEKS SISTEM (WAJIB DIINGAT):\nInput yang kamu terima HANYA berisi riwayat pesan dari sisi user. ASUMSIKAN bahwa sebelum user membalas, tim kami sudah bertanya: \"Apakah Anda masih tertarik dengan Proyek Anandaya?\".\n\nTUGAS UTAMA:\nGunakan kecerdasanmu untuk memahami balasan user. Deteksi apakah mereka bertanya secara aktif, sekadar nyasar, menolak halus, atau mengonfirmasi ketertarikan.\n\nKATEGORI OUTPUT (HANYA PILIH SATU)\nCallback\nTidak Tertarik\nAgent\n\nRULE WAJIB (PRIORITAS TERTINGGI BACA BERURUTAN):\n1. SUPER PRIORITAS - ADA PERTANYAAN (ACTIVE INQUIRY): Cek ini paling pertama! Jika di dalam pesan user terdapat pertanyaan detail properti (contoh: \"harganya berapa?\", \"fasilitasnya apa?\", \"lokasinya dimana?\", \"cicilannya?\"), maka ABAIKAN jika mereka menyebut proyek saingan (\"socia garden\", \"metland\") atau kata penundaan (\"insyaallah\", \"nanti\"). Mereka adalah prospek aktif! WAJIB klasifikasikan sebagai \"Callback\".\n2. FILTER SALAH PROYEK TANPA PERTANYAAN: Jika user menyebut proyek saingan/salah klik (contoh: \"socia garden\", \"metland\"), DAN TIDAK ADA pertanyaan detail seperti di Rule 1, maka semua kata \"iya\", \"betul\", \"insyaallah\" merujuk pada proyek lain. WAJIB klasifikasikan \"Tidak Tertarik\".\n3. JAWABAN AFIRMASI FOLLOW-UP (KHUSUS ANANDAYA): Jika user TIDAK menyebut proyek lain, dan membalas dengan afirmasi (\"masih\", \"betul\", \"iya\", \"y\", \"lanjut\") -> WAJIB \"Callback\".\n4. KONTEKS MENUNDA (KHUSUS ANANDAYA): Jika user meminta waktu (\"nanti dikabari ya\", \"pikir-pikir dulu\", \"insyaallah\") DAN TIDAK menyebut proyek lain (murni Anandaya) -> WAJIB \"Callback\".\n5. EVALUASI PERUBAHAN PIKIRAN: Jika di awal menolak/nyasar, NAMUN di akhir berbalik merespons positif atau ingin tahu (\"boleh deh lihat Anandaya\") -> WAJIB \"Callback\".\n6. PENOLAKAN & SPAM: Pesan menolak tegas (\"enggak\", \"tidak\", \"stop\"), bahas topik di luar properti, atau spam (\"asdfgh\") -> WAJIB \"Tidak Tertarik\".\n\nATURAN KLASIFIKASI BERDASARKAN INTENSI:\n\n1. Callback\nUser mengonfirmasi ketertarikannya (\"masih\", \"betul\", \"iya\", \"boleh ka\"), menunjukkan niat kuat, menunjukkan rasa ingin tahu (bertanya lokasi/fasilitas MESKIPUN menyebut proyek lain), menunda keputusan (\"insyaallah\"), atau berbalik tertarik setelah nyasar.\nCiri-ciri: Menjawab afirmasi (tanpa proyek saingan), minta survei, bahas KPR/DP, curhat mengenai kendala cicilan/BI Checking pribadi (contoh: \"data saya jelek untuk leasing/KPR\"), bertanya \"lokasi di mana?\", minta brosur, atau mengulur waktu.\n\n2. Agent\nUser memposisikan dirinya sebagai perantara.\nCiri-ciri: SECARA EKSPLISIT menawarkan kerja sama, mengaku marketing lain, tanya komisi, atau ingin bawa buyer. (CATATAN: Jika user hanya menyebut \"data jelek\" atau \"leasing\" untuk dirinya sendiri, JANGAN masukkan ke kategori ini).\n\n3. Tidak Tertarik\nUser mencari proyek lain TANPA bertanya detail (\"socia garden\"), menolak, atau menggunakan kalimat pengusir bersyarat.\nCiri-ciri: Sebut proyek lain dan tidak bertanya spesifikasi, menolak tegas, topik random.\n\nFORMAT OUTPUT (WAJIB DIPATUHI)\n- HANYA berikan satu frasa kategori dari 3 pilihan di atas.\n- JANGAN gunakan tanda kutip, titik, atau teks tambahan apapun."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        880,
+        1696
+      ],
+      "id": "925c3d79-8ccb-4fcc-834f-84442c09f1af",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "phone",
+              "value": "={{ $json.body.mobile.replace(/\\D/g, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        576,
+        1152
+      ],
+      "id": "17cbd31f-9129-48f2-94df-528be890ab00",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "466fcc97-daf5-42f2-a760-1cfec9e2a9de",
+              "leftValue": "={{ $json.spam }}",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "bab549e8-d4d6-4a54-9b2c-6260bdd1b04d",
+              "leftValue": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, '') }}",
+              "rightValue": "={{ $json.phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        1152
+      ],
+      "id": "76fa964a-0164-4c17-896a-d83e7d64b1a6",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('Select rows from a table').item.json.phone }}",
+            "chat_history": "={{\n  $('Select rows from a table').item.json.chat_history\n    ? $('Select rows from a table').item.json.chat_history + ', ' + $('2chat-input-anandaya').item.json.body.text\n    : $('2chat-input-anandaya').item.json.body.text\n}}",
+            "chat_total": "={{ Number($('Select rows from a table').item.json.chat_total ?? 0) + 1 }}"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_history",
+              "displayName": "chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "chat_total",
+              "displayName": "chat_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        992,
+        1088
+      ],
+      "id": "6808cfcb-5d02-47b3-bace-0b140502e4d1",
+      "name": "Update rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "da6fae5f-f146-4b25-876c-c781e99a2d57",
+              "leftValue": "={{ $json.chat_total }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        1120
+      ],
+      "id": "539e8f4b-67ac-4440-b330-f83c3783660d",
+      "name": "If8"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1584,
+        1024
+      ],
+      "id": "0562584e-9044-4f0f-8ba3-2559c357a0b6",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "value": "public",
+          "mode": "list",
+          "cachedResultName": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('Select rows from a table').item.json.phone }}",
+            "spam": "1"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_history",
+              "displayName": "chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_total",
+              "displayName": "chat_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "spam",
+              "displayName": "spam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2144,
+        848
+      ],
+      "id": "90e24c7d-32b3-4e86-b454-a72c78ac829d",
+      "name": "Update rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, '') }}",
+            "customer_type": "Spam",
+            "interest2": "Tidak Tertarik"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2368,
+        848
+      ],
+      "id": "8bc226f9-4f28-4e98-90e1-5608f58be8f3",
+      "name": "Update interest",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chat_history }}",
+        "options": {
+          "systemMessage": "=You are a strict binary text classifier for a property business.\n\nTask:\nClassify the user input into exactly one category:\nspam\nnot_spam\n\nRules:\n1. Classify as \"not_spam\" if the message is explicitly about buying, selling, or asking about property, especially Anandaya (e.g., house, home, unit, cluster, price, KPR, booking, site visit, location, facilities).\n2. IMPORTANT: Also classify as \"not_spam\" if the message is a natural customer follow-up, response, or scheduling talk within a sales context. This includes agreements, delaying, or declining a site visit/offer (e.g., \"ya betul\", \"belum ada waktu kesana\", \"nanti dulu\", \"lihat online saja\", \"terima kasih infonya\").\n3. Classify as \"spam\" if the topic is clearly and explicitly outside a property sales context (e.g., food, restaurant, unrelated jokes, random questions, offering unrelated services).\n4. If there is genuine doubt but it looks like a typical customer reply, lean towards \"not_spam\" so potential leads are not lost.\n5. If the input is empty, default to not_spam.\n\nConstraints:\nReply with ONLY spam or not_spam\nNo explanation\nNo punctuation\nNo extra spaces\n\nInput:\n{{ $json.chat_history }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        1584,
+        864
+      ],
+      "id": "d5bd2f77-28c3-4a8b-9d6e-d5e37d390532",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ec242734-f675-4110-a3c1-c250e7259f43",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "spam",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1920,
+        864
+      ],
+      "id": "6b904898-8332-4704-8a0a-573fa7e2e896",
+      "name": "If9"
+    },
+    {
+      "parameters": {
+        "content": "# CHATBOT\nEnable the form submission and deactivate the webhook to enter the knowledge the chatbot will use in the in Memory Vector Store",
+        "height": 1420,
+        "width": 2436
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        272,
+        672
+      ],
+      "typeVersion": 1,
+      "id": "aff5fcca-4467-42d7-b10f-aa7a477c0fc1",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, '') }}",
+            "lead_chat_history": "={{ $json.chat_history }}"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1168,
+        992
+      ],
+      "id": "d945f66d-249a-4170-b201-512508afec30",
+      "name": "Update chat_history",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "769b7e00-c257-49a7-af87-5a52c31bfe94",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        368,
+        1152
+      ],
+      "id": "693a7bb7-a9e4-495d-b7bc-64d185fb0a0e",
+      "name": "2chat-input-anandaya",
+      "webhookId": "769b7e00-c257-49a7-af87-5a52c31bfe94",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/^\\+/, '') }}",
+            "customer_type": "Agent"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1552,
+        1824
+      ],
+      "id": "44e6f2c0-cc08-46c9-945b-943238b06558",
+      "name": "Update data to agent",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/^\\+/, '') }}",
+            "interest2": "={{ $json.text }}",
+            "Last_Leads_Chat": "={{ $now.toFormat('M/d/yyyy H:mm:ss') }}"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "leadsquared_timestamp",
+              "displayName": "leadsquared_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "internal_alert",
+              "displayName": "internal_alert",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "SPV",
+              "displayName": "SPV",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last_Leads_Chat",
+              "displayName": "Last_Leads_Chat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1168,
+        1808
+      ],
+      "id": "66b46740-62fe-4b71-92b9-ef63d17f8abc",
+      "name": "Update interest3",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Wajib selalu memanggil tool ini untuk :\n- simpan data leads visit atau alasan penolakan user.\n- Simpan atau update jadwal visit. Panggil tool ini segera setelah user menyebutkan waktu (hari/tanggal/jam) tanpa menunda.",
+        "workflowId": {
+          "__rl": true,
+          "value": "ffZtHJBr31a8NZXn",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ffZtHJBr31a8NZXn",
+          "cachedResultName": "Tool - Simpan Visit-Anandaya"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "hp": "={{ $('2chat-input-anandaya').item.json.body.phonenumber }}",
+            "tanggal": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tanggal', ``, 'string') }}",
+            "bulan": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('bulan', ``, 'string') }}",
+            "tahun": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tahun', ``, 'string') }}",
+            "jam": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('jam', ``, 'string') }}",
+            "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('summary', ``, 'string') }}",
+            "interest": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('interest', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nama",
+              "displayName": "nama",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "hp",
+              "displayName": "hp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "tanggal",
+              "displayName": "tanggal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "bulan",
+              "displayName": "bulan",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tahun",
+              "displayName": "tahun",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jam",
+              "displayName": "jam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1904,
+        1408
+      ],
+      "id": "5107f855-666c-4cb2-80e1-00f34d48499c",
+      "name": "save_leads_data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "93b3128a-d93d-4c3d-8b4b-5ac1992d2710",
+              "leftValue": "={{ $('2chat-input-anandaya').item.json.body.phonenumber.replace(/\\D/g, '') }}",
+              "rightValue": "={{ $json.phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "466fcc97-daf5-42f2-a760-1cfec9e2a9de",
+              "leftValue": "={{ $json.spam }}",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        1376
+      ],
+      "id": "28ba4b1b-8a38-4409-ac20-9df51f0bc736",
+      "name": "If",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "phone",
+              "value": "={{ $('2chat-input-anandaya').item.json.body.phonenumber.replace(/\\D/g, '') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        464,
+        1376
+      ],
+      "id": "c1374d28-7da9-42d1-9f2c-86a5889cca73",
+      "name": "Select rows from a table1",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    \"kategori\": \"Kawasan dan Akses\",\n    \"teks\": \"PROJECT ANANDAYA CLUSTER NALA. INFORMASI KAWASAN: Lokasi di Serpong Selatan (Parung Panjang), sekitar 20 menit ke BSD. Luas Kawasan: 80 Ha (Total 1000+ unit). Row Jalan: Boulevard 18 meter. Utilitas: Listrik 1300W & 2200W (Underground), Air PAM, Fiber Optik. Pengembangan Mendatang (Next Future 7 Ha): Akan dibangun Rumah Sakit dan Sekolah. FASILITAS SEKITAR & AKSES: Transportasi: KRL Parung Panjang (10 menit), Exit Toll Legok (20 menit), KRL Jatake (20 menit). Tersedia Shuttle gratis ke stasiun terdekat. Mall & Belanja: Aeon Mall BSD (25 menit), Pasar Modern Intermoda, Eastvara, QBig, Summarecon Mall Serpong, Supermall Karawaci. Pendidikan & Kesehatan: SDIT Al-Fath Dagi, SMPIT Al Madany, RS Mentari, RS Bethsaida, RS Siloam Kelapa Dua, RS Mitra Keluarga Gading Serpong. Rekreasi: BSD Xtreme Park, Scientia Square Park, Ocean Park BSD City.\"\n  },\n  {\n    \"kategori\": \"Fasilitas Internal\",\n    \"teks\": \"PROJECT ANANDAYA CLUSTER NALA. FASILITAS INTERNAL (DALAM PERUMAHAN): Konsep: Resort (dekat perbukitan). Tiap cluster memiliki club house sendiri. Fasilitas Utama: Club House 2 lantai, Kolam Renang (Lt. 1), Fitness Gym (Lt. 2), Indoor & Outdoor Children Playground, Lap. Basket Full Court, Lap. Volly, Lap. Badminton, BBQ Area, Masjid tepi danau, Komersial Area/Ruko. 8 Infinity Park (Taman Tematik RTH): Skate Park, Children Playground (2 lokasi), Yoga Area, Outdoor Gym, Reading Area, Taman BBQ, Picnic Area, Splash Area (Taman Air).\"\n  },\n  {\n    \"kategori\": \"Produk dan Harga\",\n    \"teks\": \"PROJECT ANANDAYA CLUSTER NALA. INFORMASI CLUSTER NALA: Phase 1: Block A + Block B (Total 315 unit, Luas 15 Ha). Phase Selanjutnya: Akan ada ruko (belum launching). Status Bangunan: TIDAK ADA UNIT READY. Seluruh unit berstatus 100% INDEN (Pembangunan 6 - 12 bulan setelah akad). Furnishing: Kosongan (Unfurnished). TIPE UNIT DAN HARGA (Terdapat 4 pilihan tipe unit di Cluster Nala): 1) TIPE ARCA: Ukuran 6x10m | Tipe 1 Lantai | 2 Kamar Tidur | Luas Bangunan 28 m² | Luas Tanah 60 m² | Harga Rp 467.000.000. 2) TIPE BIMA: Ukuran 6x10m | Tipe 1 Lantai | 2 Kamar Tidur | Luas Bangunan 34 m² | Luas Tanah 60 m² | Harga Rp 513.000.000. 3) TIPE DEVARA: Ukuran 5x12m | Tipe 2 Lantai | 3 Kamar Tidur | Luas Bangunan 58 m² | Luas Tanah 60 m² | Harga Rp 741.000.000.\"\n  },\n  {\n    \"kategori\": \"Pembayaran dan Legalitas\",\n    \"teks\": \"PROJECT ANANDAYA CLUSTER NALA. SKEMA PEMBAYARAN & LEGALITAS: Metode Pembayaran: KPR, Cash Keras, Cash Bertahap (bisa dibantu nego dengan Inhouse saat visit). Bank Kerjasama: BCA, OCBC, Mandiri, BSI, BCA Syariah. DP & Cicilan: DP mulai 0%. Estimasi cicilan tipe standar sekitar Rp 2,8 juta/bulan (15 tahun) atau Rp 2,4 juta/bulan (20 tahun). Legalitas: SHM (Bisa AJB dan balik nama pecah sertifikat).\"\n  },\n  {\n    \"kategori\": \"Timeline dan USP\",\n    \"teks\": \"PROJECT ANANDAYA CLUSTER NALA. SERAH TERIMA UNIT & TIMELINE: Estimasi Serah Terima: Inden 6 - 12 bulan setelah akad. (Pembangunan 315 unit dimulai setelah akad). Timeline Phase 1 (Penjualan s/d Januari 2026): Serah terima tipe 1 lantai (Juli 2026), tipe 2 lantai (September 2026). Timeline Phase 2 (Penjualan mulai Februari 2026): Serah terima tipe 1 lantai (Oktober 2026), tipe 2 lantai (Desember 2026). Tambahan: Ada opsi Inden Mei 2026. Launching & Promo: Rencana launching 27 September 2025. NUP dibuka untuk 25 unit dengan Promo Diskon Rp 20.000.000 (terbatas). USP (UNIQUE SELLING POINT): 1. Full fasilitas dan taman tematik. 2. Harga sudah All In (termasuk Free PPN dan biaya-biaya lainnya). 3. Investasi menjanjikan: JORR 3 akan dibuka 3-4 tahun ke depan menuju Parung Panjang & Bogor. Anandaya akan jadi kawasan terdepan dekat tol. 4. Akses jalan akan semakin baik (Tahun depan Pemda merencanakan jalan khusus kendaraan tambang untuk mengurai truk).\"\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1104,
+        256
+      ],
+      "id": "8a28a0c3-c8f9-497e-88d3-9a52ebb35736",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "anandaya-update-2",
+          "mode": "list",
+          "cachedResultName": "anandaya-update-2"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1408,
+        256
+      ],
+      "id": "0950025e-58e0-41b6-9980-ce85cb7ec615",
+      "name": "Pinecone Vector Store3",
+      "credentials": {
+        "pineconeApi": {
+          "id": "Hk6B1LnTYJkMIRIC",
+          "name": "PineconeApi Alex Mario account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1216,
+        368
+      ],
+      "id": "bb43bfd1-3f08-46d9-b20b-5b4f0d604054",
+      "name": "Embeddings OpenAI3",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "pointers": "/teks",
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "kategori",
+                "value": "={{ $json.kategori }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1392,
+        400
+      ],
+      "id": "f8e987d9-59e3-45a8-b069-3d9e8379d0af",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE counter \nSET total_sent = total_sent + 1 \nWHERE id = 'counter_anandaya';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2304,
+        1232
+      ],
+      "id": "d34b1a48-8e38-4edb-9c40-62c70fd07b5b",
+      "name": "Execute a SQL query1",
+      "retryOnFail": false,
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE counter \nSET total_sent = total_sent + 1 \nWHERE id = 'counter_anandaya';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        64,
+        1104
+      ],
+      "id": "25a36795-472a-4374-a9b8-3d9ebc04e72e",
+      "name": "Execute a SQL query",
+      "retryOnFail": false,
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE anandaya\nSET conversation = COALESCE(conversation || CHR(10) || CHR(10), '') || 'User : ' || $2\nWHERE phone = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, ''), $('2chat-input-anandaya').item.json.body.text ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2160,
+        1632
+      ],
+      "id": "9f13a699-73f0-4bf9-8f9d-91f4f11b0071",
+      "name": "Execute a SQL query2",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE anandaya\nSET conversation = COALESCE(conversation || CHR(10) || CHR(10), '') || 'Bot : ' || $2\nWHERE phone = $1;",
+        "options": {
+          "queryReplacement": "={{ [ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, ''), $('AI Agent').item.json.output ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2384,
+        1632
+      ],
+      "id": "65c16a9a-02b2-413e-93aa-455e97f4d8e7",
+      "name": "Execute a SQL query3",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "reset_remarks",
+              "condition": "IS NULL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        656,
+        2672
+      ],
+      "id": "b4b1e8dd-2726-4e54-b60e-a699b7393747",
+      "name": "Select rows from a table2",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE anandaya\nSET \n  last_chat = '{{ $now.toFormat(\"M/d/yyyy H:mm:ss\") }}',\n  reset_remarks = NULL\nWHERE phone = '{{ $('2chat-input-anandaya').item.json.body.mobile.replace(/^\\+/, '') }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1184,
+        2144
+      ],
+      "id": "6b0ce6a6-e912-4ade-9839-ad6fcee3d068",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c074ae86-88f0-487c-bc9c-09d91adcf46b",
+              "leftValue": "={{ \n  Math.abs(\n    $now.diff(DateTime.fromISO($json.last_chat), 'hours').hours\n  )\n}}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            },
+            {
+              "id": "0fdc5aa9-2810-46af-aabe-feef11513049",
+              "leftValue": "={{ $json.reset_remarks }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        864,
+        2672
+      ],
+      "id": "6f2d4bd8-027c-477f-a8e0-5b9c0f5cdf18",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1296,
+        2832
+      ],
+      "id": "55c5db8e-72a3-4813-8847-a5eca61f6089",
+      "name": "OpenAI Chat Model8",
+      "credentials": {
+        "openAiApi": {
+          "id": "C0ZiLuV41AdV6Nr8",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.conversation }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "AIMessagePromptTemplate",
+              "message": "ROLE:\nKamu adalah AI Sales Analyst.\n\nTUGAS:\nBuat ringkasan dari percakapan dengan gaya catatan sales yang singkat dan mudah dibaca.\n\nATURAN:\n- Gunakan Bahasa Indonesia.\n- Maksimal 3 kalimat (tidak boleh lebih).\n- Setiap kalimat singkat, to the point.\n- Tidak perlu kata penghubung panjang, boleh seperti poin dipisah koma atau titik.\n- ATURAN WAJIB: Jangan berhalusinasi atau menebak-nebak. Jika informasi tidak ada di dalam percakapan, jangan ditulis.\n- JIKA LEADS BELUM MERESPON (Hanya ada pesan dari Sales/Bot): Cukup tuliskan bahwa leads sudah dihubungi terkait penawaran namun belum merespon.\n- JIKA LEADS SUDAH MERESPON, fokus ringkasan pada:\n  1. Tingkat ketertarikan leads.\n  2. Permintaan informasi (jika ada).\n  3. Status visit / respon terhadap ajakan visit.\n  4. Kondisi terakhir (misalnya belum bisa hadir, minta dihubungi lagi).\n- Jangan mengulang isi percakapan.\n- Jangan pakai kata \"User\" atau \"Bot\".\n- Gunakan gaya bahasa laporan sales (ringkas & jelas).\n\nCONTOH OUTPUT 1 (Jika Leads Sudah Merespon):\nLeads tertarik dan meminta brosur. Sudah diundang visit namun belum bisa hadir. Menunggu respon untuk penjadwalan berikutnya.\n\nCONTOH OUTPUT 2 (Jika Leads Belum Merespon):\nLeads sudah dihubungi terkait penawaran proyek. Saat ini belum ada respon atau balasan dari leads.\n\nINPUT:\n{{ $json.conversation }}\n\nOUTPUT:"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1296,
+        2656
+      ],
+      "id": "e0c59434-9519-4186-951a-0614d9783ae7",
+      "name": "Basic LLM Chain3"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Select rows from a table2').item.json.id }}",
+            "Chatbot_Remarks": "={{ $json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "lead_chat_history",
+              "displayName": "lead_chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "leadsquared_timestamp",
+              "displayName": "leadsquared_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "internal_alert",
+              "displayName": "internal_alert",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "SPV",
+              "displayName": "SPV",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Last_Leads_Chat",
+              "displayName": "Last_Leads_Chat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Chatbot_Remarks",
+              "displayName": "Chatbot_Remarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1696,
+        2656
+      ],
+      "id": "7afdb19f-1a46-4d67-b40e-8d49c4889f2f",
+      "name": "Update interest5",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "=*/1 * * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        2672
+      ],
+      "id": "b77e98ae-4bf6-4846-945d-010a0a0d293b",
+      "name": "tiap 1 menit1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "anandaya",
+          "mode": "list",
+          "cachedResultName": "anandaya"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "reset_remarks": 1,
+            "id": "={{ $('Select rows from a table2').item.json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": true,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_history",
+              "displayName": "chat_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "chat_total",
+              "displayName": "chat_total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "spam",
+              "displayName": "spam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "conversation",
+              "displayName": "conversation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_chat",
+              "displayName": "last_chat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "reset_remarks",
+              "displayName": "reset_remarks",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1680,
+        2816
+      ],
+      "id": "29f8fe72-bbf9-43d5-9a33-5ad841f9b9e8",
+      "name": "Update rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "dykHiiKfuGabdrmA",
+          "name": "Alex"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        2576
+      ],
+      "id": "cd206de2-45d5-49bb-96d5-6c9b081ea7f5",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.interest2 }}",
+                    "rightValue": "Agent",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "88758abc-3ff3-4554-b0d2-db11e5cbefd6"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Agent"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b790917a-bcac-467b-a6d7-f2d458c8c4eb",
+                    "leftValue": "={{ $json.interest2 }}",
+                    "rightValue": "Callback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Callback"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        1344,
+        1808
+      ],
+      "id": "e3785cc7-1968-4a1d-a8d3-52fb19b2d26d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/^\\+/, '') }}",
+            "customer_type": "Callback"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1552,
+        1968
+      ],
+      "id": "b593997c-6fc9-44c4-86c7-6011d04fd1ef",
+      "name": "Update data to agent2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        944,
+        1408
+      ],
+      "id": "f9502a52-6fe2-4bf6-b2aa-bd824d9f8de7",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mediaapi.smsgupshup.com/GatewayAPI/rest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "send_to",
+              "value": "={{ $('2chat-input-anandaya').item.json.body.mobile.replace(/\\D/g, '') }}"
+            },
+            {
+              "name": "msg_type",
+              "value": "DATA_TEXT"
+            },
+            {
+              "name": "userid",
+              "value": "2000258121"
+            },
+            {
+              "name": "auth_scheme",
+              "value": "plain"
+            },
+            {
+              "name": "password",
+              "value": "FptIsos0y"
+            },
+            {
+              "name": "method",
+              "value": "SendMessage"
+            },
+            {
+              "name": "v",
+              "value": "1.1"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            },
+            {
+              "name": "msg",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Gupshup SMS Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2048,
+        1200
+      ],
+      "id": "24930fd5-fefa-467f-8b91-3bdd6c303b2e"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew",
+          "mode": "list",
+          "cachedResultName": "[Anandaya] Developer Call Placeholder",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13miTlnFRQxeMoEkbBPAobMB1DIGMRINefnhNy2va9Ew/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "AI_Call_data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/17z6qbJyAcKFgGLCfXUvjrNRpjRURJ786lGW6DhS6a4s/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $json.phone }}",
+            "whatsapp_reply": "1"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "call_date",
+              "displayName": "call_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "disconnected_reason",
+              "displayName": "disconnected_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest",
+              "displayName": "interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "attempt",
+              "displayName": "attempt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "svs_date",
+              "displayName": "svs_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp",
+              "displayName": "whatsapp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "whatsapp_reply",
+              "displayName": "whatsapp_reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sent_to_dev",
+              "displayName": "sent_to_dev",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "interest2",
+              "displayName": "interest2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_type",
+              "displayName": "customer_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Sales",
+              "displayName": "Sales",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "sent_to_wa_group",
+              "displayName": "sent_to_wa_group",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        112,
+        1488
+      ],
+      "id": "f1161ed9-437a-40d9-92e7-ffa49ed7bbea",
+      "name": "update whatsapp_reply",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "kpYEZ2RamB9L1fvc",
+          "name": "Alex M Google Sheet"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const phone = $input.first().json.body.mobile || '';\n\n// Hapus semua karakter non-angka (termasuk +, -, spasi, dll)\nlet cleaned = phone.replace(/\\D/g, '');\n\n// Jika diawali 0 → ganti dengan 62\nif (cleaned.startsWith('0')) {\n  cleaned = '62' + cleaned.substring(1);\n}\n\n// Jika diawali 62 → biarkan\n// Jika format lain → tetap pakai hasil cleaned\n\nreturn [\n  {\n    json: {\n      phone: cleaned\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        1488
+      ],
+      "id": "407582eb-58f3-4308-8aef-7a12088ab34f",
+      "name": "Code in JavaScript3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "property_knowledge",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file from drive": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "property_knowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "property_knowledge",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gupshup SMS Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Update interest3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a table": {
+      "main": [
+        [
+          {
+            "node": "If8",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update chat_history",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If8": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Update interest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "If9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If9": {
+      "main": [
+        [
+          {
+            "node": "Update rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2chat-input-anandaya": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update interest3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "save_leads_data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store3",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store3",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain3": {
+      "main": [
+        [
+          {
+            "node": "Update interest5",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "tiap 1 menit1": {
+      "main": [
+        [
+          {
+            "node": "Select rows from a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Basic LLM Chain3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update rows in a table2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update interest5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Update data to agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update data to agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gupshup SMS Request": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "update whatsapp_reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bb531b3d-ecde-443a-8d73-bd2b9d7b92a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2ea8369907bebad3abb942d1832fd0be7e6add33c61c3b8cabc0b20bb298f665"
+  },
+  "id": "eXmeTmHZUKOsVLip",
+  "tags": []
+}

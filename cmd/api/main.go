@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/workflow-builder/core/internal/api"
+	"github.com/workflow-builder/core/internal/api/handlers/webhooks"
 	"github.com/workflow-builder/core/internal/model"
 	pkglog "github.com/workflow-builder/core/pkg/logger"
 	"gorm.io/driver/postgres"
@@ -114,6 +115,13 @@ func main() {
 	repo := api.NewRepo(db)
 	handler := api.NewHandler(repo, asynqClient, rdb, encKey)
 	handler.RegisterRoutes(app)
+
+	// Leadflow webhook routes (Retell + chat inbound forwarder).
+	// Per-project HMAC verification happens inside each handler.
+	retellHandler := webhooks.NewRetellHandler(db, encKey, l)
+	chatInboundHandler := webhooks.NewChatInboundHandler(db, encKey, l)
+	app.Post("/api/webhooks/retell/:slug", retellHandler.Handle)
+	app.Post("/api/webhooks/chat-inbound/:slug", chatInboundHandler.Handle)
 
 	// --- Start Background Scheduler ---
 	scheduler := api.NewScheduler(repo, asynqClient)
