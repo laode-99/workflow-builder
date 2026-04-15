@@ -7,14 +7,22 @@ import (
 	"gorm.io/gorm"
 )
 
-// Business represents a tenant / company
+// Business represents a tenant / project.
+//
+// Leadflow-specific fields (Config, Timezone, Status, ActivatedAt) were
+// added when the multi-project AI flow engine was introduced. Existing
+// non-leadflow workflows (mortgage, n8n_trigger) ignore them.
 type Business struct {
-	ID        uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
-	Name      string         `gorm:"not null" json:"name"`
-	Slug      string         `gorm:"uniqueIndex;not null" json:"slug"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	ID          uuid.UUID      `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
+	Name        string         `gorm:"not null" json:"name"`
+	Slug        string         `gorm:"uniqueIndex;not null" json:"slug"`
+	Config      string         `gorm:"type:jsonb;default:'{}'" json:"config"`          // FlowConfig jsonb; leadflow only
+	Timezone    string         `gorm:"default:'Asia/Jakarta'" json:"timezone"`          // IANA timezone
+	Status      string         `gorm:"default:'draft'" json:"status"`                   // draft | active | paused | archived
+	ActivatedAt *time.Time     `json:"activated_at,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 // Credential holds AES-encrypted API keys or OAuth tokens scoped to a Business

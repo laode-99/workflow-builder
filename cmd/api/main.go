@@ -47,13 +47,26 @@ func main() {
 	}
 	l.Info("Connected to database")
 
-	db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&model.Business{},
 		&model.Credential{},
 		&model.Workflow{},
 		&model.Execution{},
 		&model.ExecutionLog{},
-	)
+		// Leadflow engine entities
+		&model.Lead{},
+		&model.LeadMessage{},
+		&model.LeadAudit{},
+		&model.LeadAuditArchive{},
+		&model.CallEvent{},
+		&model.ChatbotState{},
+		&model.SalesAssignment{},
+		&model.LeadSalesAssignment{},
+		&model.ProjectPrompt{},
+		&model.CRMSyncIntent{},
+	); err != nil {
+		log.Fatalf("AutoMigrate failed: %v", err)
+	}
 	l.Info("Database migrations applied")
 
 	// --- Redis + Asynq ---
