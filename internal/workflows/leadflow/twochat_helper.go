@@ -13,8 +13,11 @@ import (
 // loadTwoChatClient decrypts the per-project 2chat credential and builds
 // a client, or returns an error if the credential is missing/invalid.
 // Used by both the WA group dispatcher and the internal-alert flow.
+//
+// The context is threaded through sdk.GetCredential via db.WithContext so
+// credential reads participate in the caller's cancellation/deadline.
 func loadTwoChatClient(ctx context.Context, businessID uuid.UUID) (twochat.Client, error) {
-	raw, err := sdk.GetCredential(deps.DB, businessID, "twochat", deps.EncKey)
+	raw, err := sdk.GetCredential(deps.DB.WithContext(ctx), businessID, "twochat", deps.EncKey)
 	if err != nil {
 		return nil, fmt.Errorf("load 2chat cred: %w", err)
 	}

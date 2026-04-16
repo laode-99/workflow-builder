@@ -260,31 +260,3 @@ func normalizeIntentResult(raw string) string {
 	return statemachine.IntentCallback
 }
 
-// handleIntentClassify and handleSpamClassify are the legacy sdk.Execution-
-// style handlers. They are no longer registered as cron workflows; kept as
-// thin wrappers for any code still calling them directly.
-func handleIntentClassify(ctx context.Context, exec sdk.Execution) error {
-	leadIDStr := exec.GetVar("lead_id")
-	leadID, err := uuid.Parse(leadIDStr)
-	if err != nil {
-		return err
-	}
-	task, err := newIntentClassifyTask(exec.BusinessID(), leadID)
-	if err != nil {
-		return err
-	}
-	return handleIntentClassifyTask(ctx, task)
-}
-
-func handleSpamClassify(ctx context.Context, exec sdk.Execution) error {
-	leadIDStr := exec.GetVar("lead_id")
-	leadID, err := uuid.Parse(leadIDStr)
-	if err != nil {
-		return err
-	}
-	task, err := newSpamClassifyTask(exec.BusinessID(), leadID)
-	if err != nil {
-		return err
-	}
-	return handleSpamClassifyTask(ctx, task)
-}
