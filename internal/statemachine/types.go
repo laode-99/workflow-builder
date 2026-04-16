@@ -53,6 +53,9 @@ type EventCallAnalyzed struct {
 	DisconnectedReason string
 	Interest           string
 	CustomerType       string
+	// SvsDate is the parsed site-visit date from Retell custom_analysis
+	// ("site visit date" field). Nil if not present or unparseable.
+	SvsDate *time.Time
 	// HasSufficientConvo is derived from Retell's custom_analysis:
 	// interest != "tidak ada percakapan yang cukup".
 	HasSufficientConvo bool
@@ -100,6 +103,8 @@ type Patch struct {
 	Interest              *string
 	Interest2             *string
 	CustomerType          *string
+	SvsDate               *time.Time
+	NameAlertSent         *bool
 	TerminalInvalid       *bool
 	TerminalResponded     *bool
 	TerminalNotInterested *bool
@@ -116,6 +121,7 @@ func (p Patch) IsEmpty() bool {
 	return p.Attempt == nil && p.CallDate == nil && p.WhatsappSentAt == nil &&
 		p.WhatsappReplyAt == nil && p.DisconnectedReason == nil &&
 		p.Interest == nil && p.Interest2 == nil && p.CustomerType == nil &&
+		p.SvsDate == nil && p.NameAlertSent == nil &&
 		p.TerminalInvalid == nil && p.TerminalResponded == nil &&
 		p.TerminalNotInterested == nil && p.TerminalSpam == nil &&
 		p.TerminalAgent == nil && p.TerminalCompleted == nil &&

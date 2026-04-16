@@ -11,6 +11,7 @@ import (
 	"github.com/workflow-builder/core/internal/model"
 	"github.com/workflow-builder/core/internal/sdk"
 	"github.com/workflow-builder/core/internal/statemachine"
+	"github.com/workflow-builder/core/pkg/phone"
 	"gorm.io/gorm/clause"
 )
 
@@ -87,15 +88,18 @@ func handleIngest(ctx context.Context, exec sdk.Execution) error {
 			continue
 		}
 
-		// Clean phone number
-		cleanPhone := strings.TrimPrefix(details.Phone, "+")
-		if cleanPhone == "" {
-			log.Errorf("Lead %s has no phone number, skipping.", details.ID)
+		// Canonical phone normalization (pkg/phone handles leading 0 → 62,
+		// strips "+", and validates minimum length). Leads whose phones
+		// can't be normalized are dropped entirely — they can't be dialed
+		// or messaged anyway.
+		cleanPhone, err := phone.NormalizeID(details.Phone)
+		if err != nil {
+			log.Errorf("Lead %s has invalid phone %q: %v", details.ID, details.Phone, err)
 			continue
 		}
 
 		name := strings.TrimSpace(details.FirstName + " " + details.LastName)
-		
+
 		newLead := model.Lead{
 			BusinessID: bizID,
 			ExternalID: opp.OpportunityID,
@@ -104,7 +108,6 @@ func handleIngest(ctx context.Context, exec sdk.Execution) error {
 			Attempt:    0,
 		}
 
-		// Use Upsert strictly for safety (DoNothing on conflict)
 		res := db.WithContext(ctx).Clauses(clause.OnConflict{DoNothing: true}).Create(&newLead)
 		if res.Error != nil {
 			log.Errorf("Failed to insert lead %s: %v", opp.OpportunityID, res.Error)
@@ -112,15 +115,23 @@ func handleIngest(ctx context.Context, exec sdk.Execution) error {
 		}
 		if res.RowsAffected > 0 {
 			inserted++
-			// Record Audit
-			audit := &model.LeadAudit{
+			db.Create(&model.LeadAudit{
 				BusinessID: bizID,
 				LeadID:     newLead.ID,
 				Actor:      "ingest",
 				EventType:  "lead_ingested",
 				Changes:    `{"source": "leadsquared"}`,
+			})
+
+			// Empty-name handling: fire internal alert once per lead and
+			// mark name_alert_sent=true so we don't re-alert. The lead
+			// itself stays in the DB; GetDueForDispatch's name filter
+			// will hold it out of escalation until a human fills the name.
+			if name == "" {
+				if err := fireInternalNameAlert(ctx, &newLead); err != nil {
+					log.Warnf("internal alert failed for lead %s: %v", newLead.ID, err)
+				}
 			}
-			db.Create(audit)
 		}
 	}
 

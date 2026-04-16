@@ -116,11 +116,32 @@ func (r *LeadRepo) GetDueForDispatch(ctx context.Context, tx *gorm.DB, businessI
 		Where("business_id = ? AND deleted_at IS NULL", businessID).
 		Where("NOT (terminal_invalid OR terminal_responded OR terminal_not_interested OR terminal_spam OR terminal_agent OR terminal_completed)").
 		Where("attempt IN ?", []int{0, 2, 3, 4}).
+		// Empty-name gate: leads ingested without a name are held until a
+		// human fills it in. The ingest flow fires an internal alert for
+		// these; once the name is updated, the next cron tick picks them up.
+		Where("name IS NOT NULL AND name <> ''").
 		Order("updated_at ASC").
 		Limit(limit).
 		Find(&leads).Error
 	if err != nil {
 		return nil, fmt.Errorf("select due leads: %w", err)
+	}
+	return leads, nil
+}
+
+// ListNameless returns leads whose name is still empty and whose internal
+// alert has not yet been fired. The internal alert job (or ingest flow)
+// processes these and flips name_alert_sent after notifying operators.
+func (r *LeadRepo) ListNameless(ctx context.Context, businessID uuid.UUID, limit int) ([]model.Lead, error) {
+	var leads []model.Lead
+	err := r.db.WithContext(ctx).
+		Where("business_id = ? AND deleted_at IS NULL", businessID).
+		Where("(name IS NULL OR name = '')").
+		Where("name_alert_sent = false").
+		Limit(limit).
+		Find(&leads).Error
+	if err != nil {
+		return nil, fmt.Errorf("list nameless leads: %w", err)
 	}
 	return leads, nil
 }

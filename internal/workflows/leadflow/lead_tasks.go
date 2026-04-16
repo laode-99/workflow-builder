@@ -127,6 +127,9 @@ func RegisterTaskHandlers(mux *asynq.ServeMux) error {
 	mux.HandleFunc(TaskRetellDispatchCall, handleRetellDispatchTask)
 	mux.HandleFunc(TaskGupshupSendBridging, handleGupshupBridgingTask)
 	mux.HandleFunc(TaskGupshupSendFinal, handleGupshupFinalTask)
+	mux.HandleFunc(TaskChatbotProcessTurn, handleChatbotTurnTask)
+	mux.HandleFunc(TaskChatbotClassifyIntent, handleIntentClassifyTask)
+	mux.HandleFunc(TaskChatbotClassifySpam, handleSpamClassifyTask)
 	return nil
 }
 

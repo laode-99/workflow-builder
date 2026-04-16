@@ -77,7 +77,7 @@ func (h *RetellHandler) Handle(c *fiber.Ctx) error {
 	// recorded for audit but skip the transition.
 	actOnTransition := body.Event == "call_analyzed"
 
-	leadID, ok := extractLeadID(body.Call.Metadata, body.Call.DynamicVariables)
+	leadID, ok := h.extractLeadID(c.Context(), biz.ID, body.Call.Metadata, body.Call.DynamicVariables)
 	if !ok {
 		h.log.Warnf("retell webhook: missing lead_id in metadata/dynamic_variables")
 		return c.SendStatus(fiber.StatusOK)
@@ -168,24 +168,37 @@ func (h *RetellHandler) loadProject(ctx context.Context, slug string) (*model.Bu
 	return &biz, nil
 }
 
-// extractLeadID pulls the internal lead UUID from Retell's metadata
-// (preferred) or dynamic_variables.leads_id (fallback, external id).
-// Returns (lead_id, ok).
-func extractLeadID(metadata map[string]string, dynVars map[string]interface{}) (uuid.UUID, bool) {
+// extractLeadID resolves the internal lead UUID from a Retell webhook.
+// Preference order:
+//  1. metadata.lead_id (set by our own dispatcher as a UUID)
+//  2. dynamic_variables.leads_id (external CRM id — matched via leadRepo)
+//
+// Returns zero UUID + false if neither lookup succeeded.
+func (h *RetellHandler) extractLeadID(ctx context.Context, businessID uuid.UUID, metadata map[string]string, dynVars map[string]interface{}) (uuid.UUID, bool) {
 	if metadata != nil {
-		if v, ok := metadata["lead_id"]; ok {
+		if v, ok := metadata["lead_id"]; ok && v != "" {
 			if u, err := uuid.Parse(v); err == nil {
 				return u, true
 			}
 		}
 	}
-	// Fallback — look up by leads_id in dynamic vars (external id).
-	// For MVP we require metadata.lead_id to be set by the dispatcher.
+	// Fallback: Retell's Anandaya agent is configured with leads_id as a
+	// dynamic variable carrying the LeadSquared opportunity id.
+	if dynVars != nil {
+		if raw, ok := dynVars["leads_id"]; ok {
+			if externalID, ok := raw.(string); ok && externalID != "" {
+				leadRepo := repo.NewLeadRepo(h.db)
+				if lead, err := leadRepo.GetByExternalID(ctx, businessID, externalID); err == nil {
+					return lead.ID, true
+				}
+			}
+		}
+	}
 	return uuid.Nil, false
 }
 
 // buildCallAnalyzedEvent maps Retell's custom_analysis payload to the
-// statemachine event shape.
+// statemachine event shape, including the parsed site-visit date.
 func buildCallAnalyzedEvent(body retellWebhookBody, currentAttempt int) statemachine.EventCallAnalyzed {
 	custom := body.Call.CallAnalysis.CustomAnalysisData
 	interest, _ := custom["site visit or no"].(string)
@@ -194,7 +207,6 @@ func buildCallAnalyzedEvent(body retellWebhookBody, currentAttempt int) statemac
 	attempt := currentAttempt
 	if dvAttempt, ok := body.Call.DynamicVariables["attempt"]; ok {
 		if s, ok := dvAttempt.(string); ok {
-			// parse "1", "3", "4" → int
 			for _, ch := range s {
 				if ch >= '0' && ch <= '9' {
 					attempt = int(ch - '0')
@@ -204,11 +216,30 @@ func buildCallAnalyzedEvent(body retellWebhookBody, currentAttempt int) statemac
 		}
 	}
 
+	// Parse "site visit date" — Retell's Anandaya agent emits this in
+	// "M/D/YYYY H:MM:SS AM/PM" format, e.g. "4/15/2026 2:30:00 PM".
+	var svsDate *time.Time
+	if raw, ok := custom["site visit date"].(string); ok && raw != "" {
+		layouts := []string{
+			"1/2/2006 3:04:05 PM",
+			"1/2/2006 15:04:05",
+			"2006-01-02 15:04:05",
+			"2006-01-02T15:04:05",
+		}
+		for _, layout := range layouts {
+			if t, err := time.Parse(layout, raw); err == nil {
+				svsDate = &t
+				break
+			}
+		}
+	}
+
 	return statemachine.EventCallAnalyzed{
 		Attempt:            attempt,
 		DisconnectedReason: body.Call.DisconnectionReason,
 		Interest:           interest,
 		CustomerType:       customerType,
+		SvsDate:            svsDate,
 		HasSufficientConvo: interest != statemachine.InterestInsufficientConversation && interest != "",
 	}
 }

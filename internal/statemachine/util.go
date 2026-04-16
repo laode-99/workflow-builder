@@ -70,6 +70,8 @@ func PatchToMap(p Patch) map[string]interface{} {
 	if p.Interest2 != nil { m["interest2"] = *p.Interest2 }
 	if p.CustomerType != nil { m["customer_type"] = *p.CustomerType }
 	if p.DisconnectedReason != nil { m["disconnected_reason"] = *p.DisconnectedReason }
+	if p.SvsDate != nil { m["svs_date"] = *p.SvsDate }
+	if p.NameAlertSent != nil { m["name_alert_sent"] = *p.NameAlertSent }
 	if p.TerminalInvalid != nil { m["terminal_invalid"] = *p.TerminalInvalid }
 	if p.TerminalResponded != nil { m["terminal_responded"] = *p.TerminalResponded }
 	if p.TerminalNotInterested != nil { m["terminal_not_interested"] = *p.TerminalNotInterested }

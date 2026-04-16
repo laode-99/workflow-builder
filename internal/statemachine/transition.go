@@ -158,6 +158,9 @@ func transitionCallAnalyzed(lead Lead, ev EventCallAnalyzed, cfg FlowConfig, now
 		Interest:           ptrString(ev.Interest),
 		CustomerType:       ptrString(ev.CustomerType),
 	}
+	if ev.SvsDate != nil {
+		p.SvsDate = ev.SvsDate
+	}
 
 	// Terminal leads record fields but trigger no new side effects.
 	if anyTerminal(lead) {

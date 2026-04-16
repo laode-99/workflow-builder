@@ -70,8 +70,12 @@ func processIntent(ctx context.Context, exec sdk.Execution, intent model.CRMSync
 		db.First(&sales, "id = ?", assignment.SalesAssignmentID)
 	}
 
-	// 4. Map fields based on Anandaya standards
-	updates := leadsquared.MapLeadToUpdates(&lead, sales)
+	// 4. Map fields based on the Path label on the intent (A or B).
+	// Path A = responded/interest detected; Path B = no response/invalid.
+	// The sales assignment is used only for the developer dispatch step,
+	// not for the CRM field mapping itself.
+	_ = sales
+	updates := leadsquared.BuildUpdatesForPath(&lead, intent.Path)
 
 	// 5. Execute API call
 	err = lsClient.UpdateOpportunity(ctx, lead.ExternalID, updates)
