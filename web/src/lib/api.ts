@@ -1,9 +1,20 @@
 const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 
+// Admin API key used as the X-API-Key header on every protected request.
+// Must match the ADMIN_API_KEY env var on the Go API side (middleware_auth.go).
+// Dev default is "admin-secret-dev" — override via NEXT_PUBLIC_ADMIN_API_KEY
+// in web/.env.local for staging/production.
+const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "admin-secret-dev";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = {
+    "Content-Type": "application/json",
+    "X-API-Key": ADMIN_API_KEY,
+    ...(init?.headers || {}),
+  };
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...init,
+    headers,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
