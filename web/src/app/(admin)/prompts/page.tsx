@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { 
   Plus, Save, History, Zap, MessageSquare, 
-  Settings, Search, Shield, ChevronRight, FileText, CheckCircle2, RotateCcw
+  Settings, Search, Shield, ChevronRight, FileText, CheckCircle2, RotateCcw, XCircle
 } from "lucide-react";
 import { api, ProjectPrompt, Business } from "@/lib/api";
 import { format } from "date-fns";
