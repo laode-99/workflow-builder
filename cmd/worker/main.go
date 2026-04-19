@@ -34,8 +34,6 @@ func main() {
 	_ = godotenv.Load() // Load .env file if it exists
 	l := logger.New()
 
-	// Register Leadflow handlers
-	leadflow.RegisterHandlers()
 
 	// --- Config ---
 	redisAddr := getEnv("REDIS_ADDR", "127.0.0.1:6379")
@@ -82,10 +80,8 @@ func main() {
 	mux := asynq.NewServeMux()
 
 	// Wire up the leadflow multi-project AI engine.
-	// - Register cron workflow handlers (leadflow.ingest, leadflow.attempt_manager, ...)
 	// - Inject shared infra (db, rdb, encKey, asynq client) for per-lead task handlers
 	// - Register per-lead Asynq task handlers (retell dispatch, gupshup send, ...)
-	leadflow.RegisterHandlers()
 	{
 		leadflowAsynqClient := asynq.NewClient(redisOpt)
 		leadflow.SetDependencies(&leadflow.Dependencies{

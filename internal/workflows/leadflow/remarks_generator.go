@@ -134,22 +134,15 @@ func handleRemarks(ctx context.Context, exec sdk.Execution) error {
 				Reason:    "idle > 5h",
 			}
 
-			_, err = repo.NewLeadRepo(tx).TransitionTx(ctx, tx, state.LeadID, lead.Version, patch, audit)
+			commands := []statemachine.Command{
+				statemachine.CmdEnqueueCRMSync{Path: statemachine.CRMPathResponded},
+			}
+
+			_, err = repo.NewLeadRepo(tx).TransitionTx(ctx, tx, state.LeadID, lead.Version, patch, commands, audit)
 			if err != nil {
 				return err
 			}
-
-			// Enqueue CRM Sync
-			// Note: We don't have a direct "EnqueueCmd" here yet that works outside Transition.
-			// However, handleRemarks is a cron workflow, we can manually create a CRMSyncIntent.
-			syncRepo := repo.NewCRMIntentRepo(tx)
-			return syncRepo.CreateTx(ctx, tx, &model.CRMSyncIntent{
-				BusinessID: bizID,
-				LeadID:     state.LeadID,
-				Path:       "A", // Remarks always follow interaction
-				Payload:    "{}", // Worker will build full payload from lead state
-				Status:     "pending",
-			})
+			return nil
 		})
 
 		if err != nil {

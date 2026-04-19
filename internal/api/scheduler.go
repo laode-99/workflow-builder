@@ -88,6 +88,14 @@ func (s *Scheduler) tick() {
 		
 		// If the next calculated run time is within the current minute windows, trigger it
 		if nextRun.After(now.Add(-1 * time.Minute)) && nextRun.Before(now.Add(1 * time.Second)) {
+			// SAFETY CONSTRAINT: Prevent automated cron workflows from running between 9 PM and 8 AM
+			// to protect against nighttime dispatches causing customer issues.
+			hour := now.Hour()
+			if hour >= 21 || hour < 8 {
+				log.Printf("[SCHEDULER] BLOCKED workflow '%s' (Nighttime Pause active: %02d:%02d)", wf.Alias, hour, now.Minute())
+				continue
+			}
+
 			log.Printf("[SCHEDULER] Triggering workflow '%s' (cron: %s)", wf.Alias, wf.TriggerCron)
 			s.trigger(wf)
 		}
@@ -97,15 +105,25 @@ func (s *Scheduler) tick() {
 func (s *Scheduler) trigger(wf model.Workflow) {
 	execID := uuid.New()
 	execution := &model.Execution{
-		ID:         execID,
-		WorkflowID: wf.ID,
-		Status:     "queued",
+		ID:              execID,
+		WorkflowID:      wf.ID,
+		Status:          "queued",
+		TriggeredByType: "system",
 	}
 
 	if err := s.repo.CreateExecution(execution); err != nil {
 		log.Printf("[SCHEDULER] Failed to create execution for %s: %v", wf.ID, err)
 		return
 	}
+
+	// Create Audit Log for System Trigger
+	s.repo.CreateAuditLog(&model.AuditLog{
+		BusinessID: wf.BusinessID,
+		Action:     "START_WORKFLOW",
+		TargetID:   execID,
+		TargetType: "execution",
+		Details:    `{"workflow_alias": "` + wf.Alias + `", "trigger": "system_cron"}`,
+	})
 
 	payload, _ := json.Marshal(map[string]string{
 		"workflow_id":  wf.ID.String(),

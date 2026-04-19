@@ -131,7 +131,7 @@ func (h *ChatInboundHandler) Handle(c *fiber.Ctx) error {
 			EventType: "wa_inbound",
 			Changes:   statemachine.PatchToMap(patch),
 		}
-		updated, err := leadRepo.TransitionTx(c.Context(), tx, lead.ID, lead.Version, patch, audit)
+		updated, err := leadRepo.TransitionTx(c.Context(), tx, lead.ID, lead.Version, patch, commands, audit)
 		if err != nil {
 			return err
 		}

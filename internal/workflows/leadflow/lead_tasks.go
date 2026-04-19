@@ -33,6 +33,7 @@ const (
 	TaskChatbotClassifyIntent = "leadflow.chatbot.classify_intent"
 	TaskChatbotClassifySpam   = "leadflow.chatbot.classify_spam"
 	TaskCRMSync               = "leadflow.crm.sync"
+	TaskInternalAlert         = "leadflow.internal.alert"
 )
 
 // Queue priorities.
@@ -63,6 +64,12 @@ type RetellDispatchPayload struct {
 type ChatbotTurnTaskPayload struct {
 	LeadTaskPayload
 	MessageID uint64 `json:"message_id"`
+}
+
+// InternalAlertPayload carries the error reason.
+type InternalAlertPayload struct {
+	LeadTaskPayload
+	Reason string `json:"reason"`
 }
 
 // ---- Task constructors (used by webhook handlers and cron workers) ----
@@ -130,6 +137,7 @@ func RegisterTaskHandlers(mux *asynq.ServeMux) error {
 	mux.HandleFunc(TaskChatbotProcessTurn, handleChatbotTurnTask)
 	mux.HandleFunc(TaskChatbotClassifyIntent, handleIntentClassifyTask)
 	mux.HandleFunc(TaskChatbotClassifySpam, handleSpamClassifyTask)
+	mux.HandleFunc(TaskInternalAlert, handleInternalAlertTask)
 	return nil
 }
 
@@ -264,6 +272,57 @@ func sendGupshupTemplate(ctx context.Context, t *asynq.Task, kind string) error 
 	return nil
 }
 
+// handleInternalAlertTask sends a WhatsApp notification to the internal team
+// regarding lead data issues (e.g. missing name).
+func handleInternalAlertTask(ctx context.Context, t *asynq.Task) error {
+	var p InternalAlertPayload
+	if err := json.Unmarshal(t.Payload(), &p); err != nil {
+		return fmt.Errorf("unmarshal internal alert: %w", err)
+	}
+
+	leadRepo := repo.NewLeadRepo(deps.DB)
+	lead, err := leadRepo.GetByID(ctx, p.LeadID)
+	if err != nil {
+		return fmt.Errorf("load lead: %w", err)
+	}
+
+	// Load Gupshup credentials.
+	credRaw, err := sdk.GetCredential(deps.DB, lead.BusinessID, "gupshup", deps.EncKey)
+	if err != nil {
+		return fmt.Errorf("load gupshup creds: %w", err)
+	}
+	var creds gupshup.Credentials
+	if err := json.Unmarshal([]byte(credRaw), &creds); err != nil {
+		return fmt.Errorf("parse gupshup creds: %w", err)
+	}
+
+	// Get the "internal_alert_group" from project config.
+	var biz model.Business
+	if err := deps.DB.First(&biz, "id = ?", lead.BusinessID).Error; err != nil {
+		return err
+	}
+	cfg, err := statemachine.LoadConfig([]byte(biz.Config))
+	if err != nil {
+		return err
+	}
+	
+	targetGroup := cfg.InternalAlertGroup
+	if targetGroup == "" {
+		deps.Log.Warnf("Missing 'internal_alert_group' in config for project %s. Skipping notification.", lead.BusinessID)
+		return nil
+	}
+
+	client := gupshup.NewClient(creds)
+	msg := fmt.Sprintf("⚠️ *FIX DATA ALERT [%s]*\n\nNomor: %s\nIssue: %s.\n\nMohon lengkapi data di dashboard agar AI bisa memproses.", biz.Name, lead.Phone, p.Reason)
+	
+	if err := client.SendText(ctx, targetGroup, msg); err != nil {
+		return classifyAsynqError(err)
+	}
+
+	deps.Log.Infof("internal alert sent: lead=%s reason=%s", lead.ID, p.Reason)
+	return nil
+}
+
 // isTerminal returns true if any terminal flag is set on the lead.
 func isTerminal(l *model.Lead) bool {
 	return l.TerminalInvalid || l.TerminalResponded || l.TerminalNotInterested ||
@@ -320,17 +379,13 @@ func EnqueueCommands(ctx context.Context, businessID, leadID uuid.UUID, expected
 			if err == nil {
 				_, _ = deps.Asynq.EnqueueContext(ctx, task)
 			}
-		case statemachine.CmdEnqueueCRMSync:
-			// CRM sync goes through the outbox (not Asynq) so the intent
-			// survives Redis restarts.
-			intent := &model.CRMSyncIntent{
-				BusinessID: businessID,
-				LeadID:     leadID,
-				Path:       c.Path,
-				Payload:    "{}",
-				Status:     "pending",
-			}
-			_ = deps.DB.WithContext(ctx).Create(intent).Error
+		case statemachine.CmdEnqueueInternalAlert:
+			body, _ := json.Marshal(InternalAlertPayload{
+				LeadTaskPayload: basePayload,
+				Reason:          c.Reason,
+			})
+			task := asynq.NewTask(TaskInternalAlert, body, asynq.Queue(QueueDefault))
+			_, _ = deps.Asynq.EnqueueContext(ctx, task)
 		}
 	}
 }

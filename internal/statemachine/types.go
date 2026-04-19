@@ -33,6 +33,8 @@ type Lead struct {
 	TerminalSpam          bool
 	TerminalAgent         bool
 	TerminalCompleted     bool
+	Name                  string
+	NameAlertSent         bool
 	Summary               string
 }
 
@@ -156,10 +158,17 @@ type CmdEnqueueCRMSync struct {
 	Status string // optional override, e.g. "Not Valid" | "Spam" | "Agent"
 }
 
-func (CmdEnqueueRetellCall) commandMarker() {}
-func (CmdEnqueueWABridging) commandMarker() {}
-func (CmdEnqueueWAFinal) commandMarker()    {}
-func (CmdEnqueueCRMSync) commandMarker()    {}
+// CmdEnqueueInternalAlert asks the dispatcher to notify the internal team
+// about a data issue (e.g. missing name) before proceeding with AI calls.
+type CmdEnqueueInternalAlert struct {
+	Reason string
+}
+
+func (CmdEnqueueRetellCall) commandMarker()  {}
+func (CmdEnqueueWABridging) commandMarker()  {}
+func (CmdEnqueueWAFinal) commandMarker()     {}
+func (CmdEnqueueCRMSync) commandMarker()     {}
+func (CmdEnqueueInternalAlert) commandMarker() {}
 
 // LeadToStatemachine converts a DB model Lead to a pure statemachine Lead snapshot.
 func LeadToStatemachine(l model.Lead) Lead {
@@ -178,6 +187,8 @@ func LeadToStatemachine(l model.Lead) Lead {
 		TerminalSpam:          l.TerminalSpam,
 		TerminalAgent:         l.TerminalAgent,
 		TerminalCompleted:     l.TerminalCompleted,
+		Name:                  l.Name,
+		NameAlertSent:         l.NameAlertSent,
 		Summary:               l.Summary,
 	}
 }

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as icons from "lucide-react";
 import {
   Activity, Calendar, ChevronDown, ChevronRight, ChevronUp, Clock, Database, FileCode2, History, Key,
-  LayoutDashboard, Play, Plus, Power, Save, ShieldCheck, Square, Trash2, Zap,  Loader2, Maximize2, Monitor, MoreVertical, MousePointer2, 
-  CheckCircle2, XCircle, RefreshCw, Server, Shield, List, Terminal, X, Variable, AlertCircle, Workflow, Settings, Search, Send, Smartphone, User, Network, Phone
+  LayoutDashboard, Play, Plus, Power, Save, ShieldCheck, Square, Trash2, Zap, Loader2, Maximize2, Monitor, MoreVertical, MousePointer2,
+  CheckCircle2, XCircle, RefreshCw, Server, Shield, List, Terminal, X, Variable, AlertCircle, Workflow, Settings, Search, Send, Smartphone, User as UserIcon, Network, Phone,
+  Cpu, Download, FileText, Users, MessageCircle
 } from "lucide-react";
-import { api, Business, Workflow as WorkflowType, Credential, Execution, RegistryItem, ExecutionLog, Step } from "@/lib/api";
+import { api, Business, Workflow as WorkflowType, Credential, Execution, RegistryItem, ExecutionLog, Step, User, AuditLog } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Toaster, toast } from "sonner";
 
-type TabRoute = "workspace" | "credentials" | "logs";
+type TabRoute = "workspace" | "credentials" | "logs" | "ai_engine" | "audit" | "users";
 
 const cronPresets = [
   { label: "Manual (Run Now only)", value: "" },
@@ -57,10 +58,10 @@ const WorkflowFlow = ({ steps, active }: { steps: Step[], active?: boolean }) =>
 
 const DeploymentManifest = ({ wf, credentials }: { wf: WorkflowType, credentials: Credential[] }) => {
   if (!wf.params || wf.params.length === 0) return null;
-  
+
   let vars: Record<string, string> = {};
   try { vars = JSON.parse(wf.variables || "{}"); } catch { return null; }
-  
+
   const activeParams = wf.params.filter((p: any) => !!vars[p.key]);
   if (activeParams.length === 0 && !wf.stop_time) return null;
 
@@ -115,6 +116,7 @@ function Dashboard() {
 
   // Forms
   const [newBizName, setNewBizName] = useState("");
+  const [newBizKind, setNewBizKind] = useState("standard");
   const [newCredLabel, setNewCredLabel] = useState("");
   const [newCredIntegration, setNewCredIntegration] = useState("retell_ai");
   const [newCredValue, setNewCredValue] = useState("");
@@ -138,10 +140,36 @@ function Dashboard() {
   const [triggeringWf, setTriggeringWf] = useState<string | null>(null);
   const [menuOpenWf, setMenuOpenWf] = useState<string | null>(null);
 
+  // Authentication & User State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  // Audit State
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
   // Preview State
   const [isPreviewing, setIsPreviewing] = useState<string | null>(null);
   const [previewData, setPreviewData] = useState<any[] | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  
+  // User Management State
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+
+  const [tempSearch, setTempSearch] = useState("");
+
+  const filteredRegistry = useMemo(() => {
+    return registry.filter(r => 
+      r.name.toLowerCase().includes(tempSearch.toLowerCase()) || 
+      r.signature.toLowerCase().includes(tempSearch.toLowerCase()) ||
+      r.description.toLowerCase().includes(tempSearch.toLowerCase())
+    );
+  }, [registry, tempSearch]);
+
+  const selectedReg = registry.find(r => r.signature === selectedSignature);
 
   const loadPreview = useCallback(async (workflow: WorkflowType, vars: Record<string, string>) => {
     setIsPreviewing(workflow.id);
@@ -173,6 +201,13 @@ function Dashboard() {
   // Verification state
   const [isVerifying, setIsVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<{ ok: boolean; msg?: string } | null>(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handler = () => setMenuOpenWf(null);
+    if (menuOpenWf) document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [menuOpenWf]);
 
   // Flow Visibility
   const [visibleFlows, setVisibleFlows] = useState<Record<string, boolean>>({});
@@ -216,17 +251,99 @@ function Dashboard() {
           updateURL(biz[0].id, (searchParams.get("tab") as TabRoute) || "workspace");
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [router, searchParams, updateURL]);
 
-  const activeBizId = activeBiz;
-  const refreshData = useCallback(() => {
-    if (!activeBizId) return;
-    api.listWorkflows(activeBizId).then(w => setWorkflows(w || [])).catch(() => setWorkflows([]));
-    api.listCredentials(activeBizId).then(c => setCredentials(c || [])).catch(() => setCredentials([]));
-    api.listExecutions(activeBizId).then(e => setExecutions(e || [])).catch(() => setExecutions([]));
-  }, [activeBizId]);
+  const refreshData = useCallback(async () => {
+    if (!activeBiz) return;
+    try {
+      setLoading(true);
+      const [wfs, creds, execs, reg] = await Promise.all([
+        api.listWorkflows(activeBiz),
+        api.listCredentials(activeBiz),
+        api.listExecutions(activeBiz),
+        api.getRegistry()
+      ]);
+      setWorkflows(wfs);
+      setCredentials(creds);
+      setExecutions(execs);
+      setRegistry(reg);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load project data");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeBiz]);
+
+  const fetchAuditLogs = useCallback(async () => {
+    if (!activeBiz) return;
+    try {
+      setLoadingAudit(true);
+      const logs = await api.listAuditLogs(activeBiz);
+      setAuditLogs(logs);
+    } catch (err: any) {
+      toast.error("Failed to load audit trail");
+    } finally {
+      setLoadingAudit(false);
+    }
+  }, [activeBiz]);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoadingUsers(true);
+      const data = await api.listUsers();
+      setAllUsers(data || []);
+    } catch (err: any) {
+      toast.error("Failed to fetch user list");
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
+  const createUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    try {
+      await api.createUser(newUser);
+      toast.success("User created successfully");
+      setIsAddingUser(false);
+      setNewUser({ name: "", email: "", password: "" });
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create user");
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
+    try {
+      await api.deleteUser(id);
+      toast.success("User deleted");
+      fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete user");
+    }
+  };
+
+  useEffect(() => {
+    if (activeBiz) {
+      refreshData();
+    } else {
+      setLoading(false);
+    }
+  }, [activeBiz, refreshData]);
+
+  useEffect(() => {
+    if (route === "audit") {
+      fetchAuditLogs();
+    }
+    if (route === "users") {
+      fetchUsers();
+    }
+  }, [route, fetchAuditLogs, fetchUsers]);
 
   const loadLogs = useCallback(async (id: string) => {
     setViewingLogs(id);
@@ -259,8 +376,6 @@ function Dashboard() {
     setVisibleFlows(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  useEffect(() => { refreshData(); }, [refreshData]);
-
   // Auto-poll when any workflow has a running execution
   const hasRunning = executions.some(e => e.status === "running" || e.status === "queued");
   const pollRef = useRef<ReturnType<typeof setInterval>>();
@@ -271,21 +386,39 @@ function Dashboard() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [hasRunning, refreshData]);
 
-  // Close menu when clicking outside
+  // Auth check
   useEffect(() => {
-    const handler = () => setMenuOpenWf(null);
-    if (menuOpenWf) document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
-  }, [menuOpenWf]);
+    const token = localStorage.getItem("fb_token");
+    const userJson = localStorage.getItem("fb_user");
+    if (!token || !userJson) {
+      setIsAuthenticated(false);
+      router.push("/login");
+    } else {
+      setIsAuthenticated(true);
+      setCurrentUser(JSON.parse(userJson));
+    }
+  }, [router]);
+
+  // Loading or Redirecting state
+  if (isAuthenticated === null || isAuthenticated === false) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600/30" />
+      </div>
+    );
+  }
+
+
 
   // ======================== Actions ========================
 
   const createBusiness = async () => {
     if (!newBizName.trim()) return;
-    const b = await api.createBusiness(newBizName.trim());
+    const b = await api.createBusiness(newBizName.trim(), newBizKind);
     setBusinesses(prev => [b, ...prev]);
     setActiveBiz(b.id);
     setNewBizName("");
+    setNewBizKind("standard");
   };
 
   const deleteBusiness = async (id: string) => {
@@ -298,7 +431,7 @@ function Dashboard() {
     }
   };
 
-  const selectedReg = registry.find(r => r.signature === selectedSignature);
+
 
   const createWorkflow = async () => {
     if (!activeBiz || !selectedSignature || !newWfAlias.trim()) return;
@@ -400,7 +533,7 @@ function Dashboard() {
     setActiveVerifyId(id);
     setVerifyResult(null);
     setIsVerifying(true);
-    
+
     // Call API
     api.verifyCredential(id)
       .then(() => {
@@ -431,7 +564,7 @@ function Dashboard() {
     if (!wf.params || wf.params.length === 0) return true;
     try {
       const vars = JSON.parse(wf.variables || "{}");
-      return wf.params.every((p: any) => !!vars[p.key]);
+      return wf.params.every((p: any) => p.optional || !!vars[p.key]);
     } catch { return false; }
   };
 
@@ -463,13 +596,13 @@ function Dashboard() {
             { key: "workspace" as const, icon: LayoutDashboard, label: "Workflows" },
             { key: "credentials" as const, icon: Key, label: "Credentials" },
             { key: "logs" as const, icon: History, label: "Execution Logs" },
+            { key: "audit" as const, icon: ShieldCheck, label: "Audit Trail" },
           ].map(item => (
             <button
               key={item.key}
               onClick={() => setRoute(item.key)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                route === item.key ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"
-              }`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${route === item.key ? "bg-blue-50 text-blue-700 font-medium" : "text-slate-600 hover:bg-slate-50"
+                }`}
             >
               <item.icon className="w-4 h-4" /> {item.label}
             </button>
@@ -495,9 +628,8 @@ function Dashboard() {
               <div key={b.id} className="group flex items-center">
                 <button
                   onClick={() => { setActiveBiz(b.id); setRoute("workspace"); }}
-                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-md text-sm truncate transition-colors ${
-                    activeBiz === b.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-500 hover:bg-slate-50"
-                  }`}
+                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-md text-sm truncate transition-colors ${activeBiz === b.id ? "bg-slate-100 font-medium text-slate-900" : "text-slate-500 hover:bg-slate-50"
+                    }`}
                 >
                   <Database className={`w-3.5 h-3.5 shrink-0 ${activeBiz === b.id ? "text-blue-600" : "text-slate-400"}`} />
                   <span className="truncate">{b.name}</span>
@@ -514,13 +646,29 @@ function Dashboard() {
             {businesses.length === 0 && <p className="text-xs text-slate-400 px-3 py-4">No businesses yet.</p>}
           </div>
         </div>
-
-        <div className="p-3 border-t">
-          <div className="flex items-center gap-2.5 px-2">
-            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-[10px]">LM</div>
-            <div>
-              <p className="text-xs font-medium leading-none">La Ode M.</p>
-              <p className="text-[10px] text-slate-400">Admin</p>
+        <div className="p-4 border-t bg-slate-50/50">
+          <div className="flex items-center gap-3 px-1">
+            <div className="relative group">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-100">
+                <UserIcon className="w-4 h-4" />
+              </div>
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-slate-900 truncate">{currentUser?.name || "Administrator"}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] text-slate-400 truncate uppercase tracking-tighter">Authorized Session</p>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("fb_token");
+                    localStorage.removeItem("fb_user");
+                    router.push("/login");
+                  }}
+                  className="text-[9px] font-bold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-widest"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -537,27 +685,45 @@ function Dashboard() {
               <span className="font-semibold text-slate-800">{activeBusiness?.name || "—"}</span>
             </div>
           </div>
-          {activeBiz && (
-            <div className="px-6 flex gap-0 border-t bg-slate-50/50">
-              {[
-                { key: "workspace" as const, label: "Workflows" },
-                { key: "credentials" as const, label: "Credentials" },
-                { key: "logs" as const, label: "Execution Logs" },
-              ].map(tab => (
+          <div className="px-6 flex gap-0 border-t bg-slate-50/50">
+            {(["ai_engine", "workspace", "credentials", "logs", "audit", "users"] as const).filter(tabKey => {
+              if (tabKey === "ai_engine") {
+                return activeBusiness?.kind === "developer";
+              }
+              return true;
+            }).map(tabKey => {
+              const tabLabels: Record<TabRoute, string> = {
+                ai_engine: "AI Leadflow Engine Suite",
+                workspace: "Workflows",
+                credentials: "Credentials",
+                logs: "Execution Logs",
+                audit: "Audit Trail",
+                users: "User Management"
+              };
+              const tabIcons: Record<TabRoute, any> = {
+                ai_engine: Cpu,
+                workspace: Workflow,
+                credentials: Key,
+                logs: History,
+                audit: ShieldCheck,
+                users: Users
+              };
+              const Icon = tabIcons[tabKey];
+              return (
                 <button
-                  key={tab.key}
-                  onClick={() => setRoute(tab.key)}
-                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                    route === tab.key
+                  key={tabKey}
+                  onClick={() => setRoute(tabKey)}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${route === tabKey
                       ? "border-blue-600 text-blue-700"
                       : "border-transparent text-slate-500 hover:text-slate-700"
-                  }`}
+                    }`}
                 >
-                  {tab.label}
+                  <Icon className={`w-3.5 h-3.5 ${route === tabKey ? "text-blue-600" : "text-slate-400"}`} />
+                  {tabLabels[tabKey]}
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </header>
 
         <div className="flex-1 overflow-auto p-6">
@@ -568,6 +734,182 @@ function Dashboard() {
             </div>
           ) : (
             <div className="max-w-4xl mx-auto">
+              {/* ========== GLOBAL ADD WORKFLOW DIALOG ========== */}
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <DialogContent className="max-w-none sm:max-w-6xl w-[95vw] bg-white border-0 shadow-[0_32px_128px_rgba(0,0,0,0.18)] rounded-[40px] p-0 overflow-hidden flex flex-col md:flex-row h-[85vh]">
+                  
+                  {/* LEFT PANE: SEARCH & TEMPLATES */}
+                  <div className="flex-1 flex flex-col min-w-0 bg-slate-50/30">
+                    <div className="p-10 pb-6">
+                      <div className="flex items-center gap-5 mb-8">
+                        <div className="w-16 h-16 rounded-[24px] bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-2xl shadow-blue-200">
+                          <Zap className="w-8 h-8 text-white" />
+                        </div>
+                        <div>
+                          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Template Library</h2>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
+                            <Activity className="w-3 h-3 text-blue-500" /> {registry.length} Blueprints Registered
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                        <Input 
+                          placeholder="Search for internal tools or AI engine templates..." 
+                          value={tempSearch}
+                          onChange={(e) => setTempSearch(e.target.value)}
+                          className="pl-11 h-12 bg-white border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-500/10 transition-all text-sm font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-10 pb-10">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {filteredRegistry.map((r: RegistryItem) => (
+                          <button
+                            key={r.signature}
+                            onClick={() => {
+                              setSelectedSignature(r.signature);
+                              if (!newWfAlias) setNewWfAlias(r.name);
+                            }}
+                            className={`group relative p-6 rounded-[28px] border-2 text-left transition-all duration-300 flex flex-col h-full hover:scale-[1.02] active:scale-[0.98] ${selectedSignature === r.signature
+                              ? "border-blue-600 bg-white shadow-xl shadow-blue-100 ring-4 ring-blue-50"
+                              : "border-white bg-white shadow-sm hover:shadow-xl hover:shadow-slate-200/50"
+                              }`}
+                          >
+                            <div className="mb-4 flex items-center justify-between">
+                              <div className={`p-2.5 rounded-2xl shadow-sm ${selectedSignature === r.signature ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600"}`}>
+                                {r.category === "ai_engine" ? <Cpu className="w-5 h-5" /> : <Settings className="w-5 h-5" />}
+                              </div>
+                              {selectedSignature === r.signature && (
+                                <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                                  <CheckCircle2 className="w-4 h-4 text-white" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <h3 className={`font-black text-sm leading-tight transition-colors ${selectedSignature === r.signature ? "text-slate-900" : "text-slate-700"}`}>
+                              {r.name}
+                            </h3>
+                            <p className="text-[11px] text-slate-400 font-medium mt-2 mb-4 line-clamp-3 leading-relaxed">
+                              {r.description}
+                            </p>
+                            
+                            <div className="mt-auto pt-4 border-t border-slate-50">
+                              <code className={`text-[9px] font-black uppercase tracking-widest ${selectedSignature === r.signature ? "text-blue-600" : "text-slate-300"}`}>
+                                {r.signature}
+                              </code>
+                            </div>
+                          </button>
+                        ))}
+                        {filteredRegistry.length === 0 && (
+                          <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-100 rounded-[32px]">
+                            <Search className="w-12 h-12 mb-4 opacity-10" />
+                            <h5 className="text-sm font-bold text-slate-600">No templates found</h5>
+                            <p className="text-[11px] mt-1">Found {registry.length} in registry. Search term: "{tempSearch}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RIGHT PANE: CONFIGURATION */}
+                  <div className="w-full md:w-[380px] border-l border-slate-100 flex flex-col bg-white">
+                    {!selectedSignature ? (
+                      <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+                        <div className="w-20 h-20 rounded-full bg-slate-50 flex items-center justify-center mb-6">
+                          <MousePointer2 className="w-8 h-8 text-slate-300 animate-bounce" />
+                        </div>
+                        <h4 className="text-lg font-black text-slate-900">Choose a Template</h4>
+                        <p className="text-sm text-slate-400 mt-2">Select any item from the library to configure its deployment settings.</p>
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="p-8 border-b border-slate-50 bg-slate-50/30">
+                          <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Configuration</h4>
+                          <p className="text-[10px] text-slate-400 font-bold mt-1">FOR: {selectedSignature}</p>
+                        </div>
+                        
+                        <div className="p-8 space-y-8 flex-1">
+                          {/* Name Input */}
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">UI Display Name</label>
+                            <Input
+                              value={newWfAlias}
+                              onChange={e => setNewWfAlias(e.target.value)}
+                              placeholder="e.g. My Custom Growth Loop"
+                              className="h-12 rounded-2xl border-slate-100 bg-slate-50/50 focus:bg-white transition-all font-bold"
+                            />
+                            <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
+                              This name will appear in your dashboard logs and metrics.
+                            </p>
+                          </div>
+
+                          {/* Schedule Input */}
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block">Execution Schedule</label>
+                            <select
+                              className="w-full border-slate-100 rounded-2xl px-4 h-12 text-sm bg-slate-50/50 focus:bg-white focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold"
+                              value={cronMode === "custom" ? "__custom__" : newWfCron}
+                              onChange={e => {
+                                if (e.target.value === "__custom__") {
+                                  setCronMode("custom");
+                                  setNewWfCron("");
+                                } else {
+                                  setCronMode("preset");
+                                  setNewWfCron(e.target.value);
+                                }
+                              }}
+                            >
+                              {cronPresets.map((p: any) => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
+                              ))}
+                              <option value="__custom__">Manual Cron Definition...</option>
+                            </select>
+                            
+                            {cronMode === "custom" && (
+                              <Input
+                                value={newWfCron}
+                                onChange={e => setNewWfCron(e.target.value)}
+                                placeholder="e.g. 0 9 * * *"
+                                className="h-12 rounded-2xl border-blue-100 bg-blue-50/20 font-mono text-xs font-black text-blue-700"
+                              />
+                            )}
+                            
+                            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 mt-4">
+                              <div className="flex items-center gap-3">
+                                <Clock className="w-4 h-4 text-blue-600" />
+                                <span className="text-[11px] font-bold text-slate-700">
+                                  {newWfCron ? `Runs: ${newWfCron}` : "Manual Trigger Only"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Submit Footer */}
+                        <div className="p-8 pt-4">
+                          <Button
+                            className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-sm font-black rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95"
+                            onClick={createWorkflow}
+                            disabled={!newWfAlias.trim()}
+                          >
+                            <Zap className="w-4 h-4 mr-2" /> INITIALIZE WORKFLOW
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            className="w-full mt-3 h-10 text-[10px] font-black text-slate-400 hover:text-red-500"
+                            onClick={() => setSelectedSignature("")}
+                          >
+                            CANCEL SELECTION
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* ===================== WORKFLOWS TAB ===================== */}
               {route === "workspace" && (
@@ -578,124 +920,13 @@ function Dashboard() {
                       <p className="text-xs text-slate-500 mt-0.5">Add a workflow template, configure its variables, and run it.</p>
                     </div>
 
-                    {/* ========== ADD WORKFLOW DIALOG ========== */}
-                    <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                      <DialogTrigger render={
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
-                          <Plus className="w-4 h-4 mr-1.5" /> Add Workflow
-                        </Button>
-                      } />
-                      <DialogContent className="max-w-lg bg-white border shadow-2xl">
-                        <DialogHeader>
-                          <DialogTitle className="text-lg">Add a Workflow</DialogTitle>
-                          <DialogDescription className="text-slate-500">
-                            Workflows are Go functions that run your business logic. Pick one from the available templates below, give it a name, and configure it.
-                          </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="space-y-5 pt-2">
-                          {/* Step 1 — pick template */}
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 mb-2 block">Workflow Template</label>
-                            {registry.length === 0 ? (
-                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
-                                No workflow templates available. Register one in your Go code first.
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {registry.map(r => (
-                                  <button
-                                    key={r.signature}
-                                    onClick={() => setSelectedSignature(r.signature)}
-                                    className={`w-full text-left border rounded-lg p-3.5 transition-all ${
-                                      selectedSignature === r.signature
-                                        ? "border-blue-500 bg-blue-50/50 ring-1 ring-blue-200"
-                                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <span className="font-semibold text-sm">{r.name}</span>
-                                      <code className="text-[10px] text-slate-400 font-mono">{r.signature}</code>
-                                    </div>
-                                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">{r.description}</p>
-                                    {r.params && r.params.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-2">
-                                        {r.params.map((p: any) => (
-                                          <span key={p.key} className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
-                                            {p.key}{p.type === "credential" ? ":🔑" : ""}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    )}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Step 2 — name */}
-                          {selectedSignature && (
-                            <>
-                              <div>
-                                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Display Name</label>
-                                <Input
-                                  value={newWfAlias}
-                                  onChange={e => setNewWfAlias(e.target.value)}
-                                  placeholder="e.g. Morning Cold Calls"
-                                />
-                              </div>
-
-                              {/* Step 3 — schedule */}
-                              <div>
-                                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Schedule</label>
-                                <select
-                                  className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                  value={cronMode === "custom" ? "__custom__" : newWfCron}
-                                  onChange={e => {
-                                    if (e.target.value === "__custom__") {
-                                      setCronMode("custom");
-                                      setNewWfCron("");
-                                    } else {
-                                      setCronMode("preset");
-                                      setNewWfCron(e.target.value);
-                                    }
-                                  }}
-                                >
-                                  {cronPresets.map((p: any) => (
-                                    <option key={p.value} value={p.value}>{p.label}</option>
-                                  ))}
-                                  <option value="__custom__">Custom Cron...</option>
-                                </select>
-                                {cronMode === "custom" && (
-                                  <Input
-                                    value={newWfCron}
-                                    onChange={e => setNewWfCron(e.target.value)}
-                                    placeholder="e.g. 30 9 * * 1-5"
-                                    className="mt-2 font-mono"
-                                  />
-                                )}
-                                <p className="text-[11px] text-slate-400 mt-1.5">
-                                  {newWfCron ? <>Schedule: <code className="bg-slate-100 px-1 rounded">{newWfCron}</code></> : "No schedule — you\u2019ll trigger this workflow manually."}
-                                </p>
-                              </div>
-
-                              {/* Submit */}
-                              <Button
-                                className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-sm font-medium"
-                                onClick={createWorkflow}
-                                disabled={!newWfAlias.trim()}
-                              >
-                                <Plus className="w-4 h-4 mr-2" /> Create Workflow
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <Button size="sm" onClick={() => setAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      <Plus className="w-4 h-4 mr-1.5" /> Add Workflow
+                    </Button>
                   </div>
 
                   {/* Empty state */}
-                  {workflows.length === 0 ? (
+                  {workflows.filter(wf => activeBusiness?.kind === "developer" ? wf.category !== "ai_engine" : true).length === 0 ? (
                     <Card className="border-dashed border-2 border-slate-200 bg-white">
                       <CardContent className="flex flex-col items-center justify-center py-16 text-slate-400">
                         <FileCode2 className="w-10 h-10 mb-3 opacity-30" />
@@ -705,7 +936,7 @@ function Dashboard() {
                     </Card>
                   ) : (
                     /* ========== WORKFLOW CARDS ========== */
-                    workflows.map(wf => {
+                    workflows.filter(wf => activeBusiness?.kind === "developer" ? wf.category !== "ai_engine" : true).map(wf => {
                       const running = isWfRunning(wf.id);
                       const latestExec = getLatestExec(wf.id);
                       const configured = areVarsConfigured(wf);
@@ -721,17 +952,16 @@ function Dashboard() {
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 mb-1.5">
                                 <h3 className="font-bold text-base truncate">{wf.alias}</h3>
-                                  <button 
-                                    onClick={() => toggleWfActive(wf.id)}
-                                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all ${
-                                      wf.is_active 
-                                        ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100" 
-                                        : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                                <button
+                                  onClick={() => toggleWfActive(wf.id)}
+                                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all ${wf.is_active
+                                      ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                      : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
                                     }`}
-                                  >
-                                    <Power className={`w-2.5 h-2.5 ${wf.is_active ? "fill-green-600" : ""}`} />
-                                    <span className="text-[10px] font-bold uppercase tracking-tight">{wf.is_active ? "Active" : "Paused"}</span>
-                                  </button>
+                                >
+                                  <Power className={`w-2.5 h-2.5 ${wf.is_active ? "fill-green-600" : ""}`} />
+                                  <span className="text-[10px] font-bold uppercase tracking-tight">{wf.is_active ? "Active" : "Paused"}</span>
+                                </button>
                                 {running ? (
                                   <Badge className="bg-blue-100 text-blue-700 border-none text-[10px] px-1.5 py-0 leading-4 gap-1">
                                     <Loader2 className="w-2.5 h-2.5 animate-spin" /> RUNNING
@@ -752,7 +982,7 @@ function Dashboard() {
                                   <span className="flex items-center gap-1 text-slate-300"><Clock className="w-3 h-3" /> Manual</span>
                                 )}
                               </div>
-                              
+
                               {/* Deployment Manifest (Source of Truth) */}
                               <DeploymentManifest wf={wf} credentials={credentials} />
                             </div>
@@ -763,8 +993,8 @@ function Dashboard() {
                                   STOP
                                 </Button>
                               ) : (
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   className="bg-slate-900 hover:bg-slate-800 text-white shadow-md transition-all active:scale-95 text-[11px] font-bold h-8"
                                   onClick={() => triggerWorkflow(wf.id)}
                                   disabled={triggering || !configured || !wf.is_active}
@@ -773,7 +1003,7 @@ function Dashboard() {
                                   {triggering ? "STARTING..." : "RUN NOW"}
                                 </Button>
                               )}
-                              
+
                               <div className="relative group/menu">
                                 <Button
                                   variant="ghost"
@@ -783,23 +1013,23 @@ function Dashboard() {
                                 >
                                   <MoreVertical className="w-4 h-4" />
                                 </Button>
-                                
+
                                 {menuOpenWf === wf.id && (
                                   <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-100">
-                                    <button 
+                                    <button
                                       onClick={() => openVarEditor(wf)}
                                       className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 flex items-center gap-2"
                                     >
                                       <Settings className="w-3.5 h-3.5 text-slate-400" /> {expandedWf === wf.id ? "Hide Settings" : "Configure"}
                                     </button>
-                                    <button 
+                                    <button
                                       onClick={() => loadBlueprint(wf)}
                                       className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 flex items-center gap-2"
                                     >
                                       <Shield className="w-3.5 h-3.5 text-blue-500" /> View Blueprint
                                     </button>
                                     <div className="h-px bg-slate-100 my-1" />
-                                    <button 
+                                    <button
                                       onClick={() => deleteWorkflow(wf.id)}
                                       className="w-full text-left px-3 py-1.5 text-xs hover:bg-red-50 text-red-600 flex items-center gap-2"
                                     >
@@ -820,6 +1050,16 @@ function Dashboard() {
                                   <Save className="w-3.5 h-3.5 mr-1" /> {savingVars ? "Saving..." : "Save"}
                                 </Button>
                               </div>
+                              
+                              {wf.signature === "N8NTriggerWorkflow" && (
+                                <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs py-2.5 px-3.5 rounded-lg mb-4 flex items-start gap-2.5">
+                                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                                  <span className="leading-relaxed">
+                                    <strong>Restricted Operating Hours:</strong> This specific workflow is hard-coded to only process operations between <strong>8:00 AM and 6:00 PM (Jakarta time)</strong>. Any automated or manual triggers arriving outside this window will be safely rejected to prevent out-of-hours executions.
+                                  </span>
+                                </div>
+                              )}
+
                               {wf.params && wf.params.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   {wf.params.map((param: any) => (
@@ -828,7 +1068,7 @@ function Dashboard() {
                                         {param.key.replace(/_/g, " ")}
                                         {param.type === "credential" && <span className="ml-1.5 text-blue-500">🔑</span>}
                                       </label>
-                                      
+
                                       {param.type === "credential" ? (
                                         <select
                                           className="w-full h-9 px-3 bg-white border border-slate-200 rounded-md text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -872,19 +1112,19 @@ function Dashboard() {
                                     </h4>
                                     <div className="flex gap-1.5">
                                       {editingStopTime && (
-                                        <Button 
-                                          size="sm" 
-                                          variant="ghost" 
-                                          onClick={() => { setEditingStopTime(""); setTimeout(() => saveStopTime(wf.id), 0); }} 
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => { setEditingStopTime(""); setTimeout(() => saveStopTime(wf.id), 0); }}
                                           className="h-6 text-[9px] text-slate-400 hover:text-red-500"
                                         >
                                           RESET
                                         </Button>
                                       )}
-                                      <Button 
-                                        size="sm" 
-                                        onClick={() => saveStopTime(wf.id)} 
-                                        disabled={savingStopTime} 
+                                      <Button
+                                        size="sm"
+                                        onClick={() => saveStopTime(wf.id)}
+                                        disabled={savingStopTime}
                                         className="h-6 text-[9px] bg-amber-600 hover:bg-amber-700 font-bold"
                                       >
                                         <Save className="w-2.5 h-2.5 mr-1" /> {savingStopTime ? "SAVING..." : "SAVE STOP TIME"}
@@ -911,10 +1151,10 @@ function Dashboard() {
                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter flex items-center gap-1.5">
                                       <Calendar className="w-3 h-3 text-blue-500" /> Automation Schedule
                                     </h4>
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => saveCron(wf.id)} 
-                                      disabled={savingCron} 
+                                    <Button
+                                      size="sm"
+                                      onClick={() => saveCron(wf.id)}
+                                      disabled={savingCron}
                                       className="h-6 text-[9px] bg-blue-600 hover:bg-blue-700 font-bold"
                                     >
                                       <Save className="w-2.5 h-2.5 mr-1" /> {savingCron ? "SAVING..." : "UPDATE SCHEDULE"}
@@ -931,7 +1171,7 @@ function Dashboard() {
                                       ))}
                                       <option value="custom">Custom CRON Expression...</option>
                                     </select>
-                                    
+
                                     <Input
                                       value={editingCron}
                                       onChange={e => setEditingCron(e.target.value)}
@@ -947,9 +1187,9 @@ function Dashboard() {
                                 <div className="mt-4 pt-4 border-t border-slate-200">
                                   <div className="flex items-center justify-between mb-3">
                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Data Preview</span>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
                                       onClick={() => loadPreview(wf, editingVars)}
                                       disabled={!!isPreviewing}
                                       className="h-6 text-[10px] text-blue-600 hover:bg-blue-50"
@@ -1020,6 +1260,210 @@ function Dashboard() {
                       );
                     })
                   )}
+                </div>
+              )}
+
+              {/* ===================== AI ENGINE DASHBOARD ===================== */}
+              {route === "ai_engine" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-100">
+                          <Cpu className="w-6 h-6 text-white" />
+                        </div>
+                        Anandaya AI Engine
+                      </h2>
+                      <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                        <Activity className="w-3 h-3 text-emerald-500" /> System Active & Monitoring Leads
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={refreshData} className="h-9 px-4 rounded-xl border-slate-200 hover:bg-slate-50">
+                        <RefreshCw className="w-3.5 h-3.5 mr-2" /> Refresh State
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-slate-900 border-none hover:bg-black text-white px-4 h-9 font-bold rounded-xl shadow-lg shadow-slate-200"
+                        onClick={() => setRoute("logs")}
+                      >
+                        <Terminal className="w-3.5 h-3.5 mr-2" /> Live Console
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* SYSTEM HEALTH CARD */}
+                    <Card className="md:col-span-2 border-none shadow-xl shadow-slate-200/50 bg-white overflow-hidden rounded-3xl">
+                      <div className="p-6 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+                            <Zap className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-800">Engine Components</h3>
+                            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-0.5">Control Panel</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] uppercase font-bold px-2 py-0.5">
+                          Atomic Consistency: Enabled
+                        </Badge>
+                      </div>
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            { key: "leadflow.ingest", label: "Lead Ingestion", icon: Download, color: "blue" },
+                            { key: "leadflow.attempt_manager", label: "Attempt Escalation", icon: Search, color: "indigo" },
+                            { key: "leadflow.remarks_generator", label: "AI Remarks Gen", icon: FileText, color: "amber" },
+                            { key: "leadflow.wa_group_dispatch", label: "Sales Dispatch", icon: Users, color: "rose" },
+                          ].map(comp => {
+                            const wf = workflows.find(w => w.signature === comp.key);
+                            const active = wf?.is_active;
+                            const running = wf && isWfRunning(wf.id);
+
+                            return (
+                              <div key={comp.key} className={`group relative p-4 rounded-2xl border transition-all duration-300 ${active ? "bg-white border-slate-100 shadow-sm hover:shadow-md" : "bg-slate-50 border-transparent opacity-60"
+                                }`}>
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className={`p-2.5 rounded-xl ${active ? `bg-${comp.color}-50 text-${comp.color}-600` : "bg-slate-200 text-slate-500"}`}>
+                                    <comp.icon className="w-5 h-5" />
+                                  </div>
+                                  {wf ? (
+                                    <button
+                                      onClick={() => toggleWfActive(wf.id)}
+                                      className={`w-10 h-5 rounded-full transition-colors relative flex items-center px-1 ${active ? "bg-blue-600" : "bg-slate-300"}`}
+                                    >
+                                      <div className={`w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${active ? "translate-x-4.5" : "translate-x-0"}`} />
+                                    </button>
+                                  ) : (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-[10px] font-bold text-blue-600 hover:bg-blue-50 h-7"
+                                      onClick={() => {
+                                        setSelectedSignature(comp.key);
+                                        setNewWfAlias(comp.label);
+                                        setNewWfCron("*/15 * * * *");
+                                        setAddDialogOpen(true);
+                                      }}
+                                    >
+                                      SETUP
+                                    </Button>
+                                  )}
+                                </div>
+                                <h4 className="text-xs font-bold text-slate-900">{comp.label}</h4>
+                                <div className="mt-1 flex items-center justify-between">
+                                  <p className="text-[10px] text-slate-400 font-medium">
+                                    {wf ? (wf.trigger_cron ? `Every ${wf.trigger_cron.split(" ")[0].slice(2) || "1"} min` : "Manual") : "Not installed"}
+                                  </p>
+                                  {running && (
+                                    <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-ping" />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* CONNECTIVITY / INFRA CARD */}
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-slate-900 overflow-hidden rounded-3xl text-white">
+                      <div className="p-6 border-b border-white/5 bg-white/5">
+                        <h3 className="text-sm font-bold">Network Connectivity</h3>
+                        <p className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-0.5">Integration Bridge</p>
+                      </div>
+                      <CardContent className="p-6 space-y-6">
+                        {[
+                          { label: "LeadSquared CRM", integration: "leadsquared", icon: Database },
+                          { label: "Retell AI (Voice)", integration: "retell_ai", icon: Phone },
+                          { label: "Gupshup (WhatsApp)", integration: "gupshup_wa", icon: MessageCircle },
+                        ].map(conn => {
+                          const hasCred = credentials.some(c => c.integration === conn.integration);
+                          return (
+                            <div key={conn.label} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${hasCred ? "bg-emerald-500/20 text-emerald-400" : "bg-white/10 text-white/40"}`}>
+                                  <conn.icon className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold leading-none">{conn.label}</p>
+                                  <p className={`text-[10px] mt-1 ${hasCred ? "text-emerald-500" : "text-white/30"}`}>
+                                    {hasCred ? "Connected" : "Not Configured"}
+                                  </p>
+                                </div>
+                              </div>
+                              {hasCred ? (
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                              ) : (
+                                <button onClick={() => setRoute("credentials")} className="text-[10px] font-bold text-white/40 hover:text-white underline decoration-white/20">FIX</button>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        <div className="pt-4 border-t border-white/5">
+                          <div className="bg-white/5 rounded-2xl p-4">
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest leading-none mb-3">Sync Poller Status</p>
+                            <div className="flex items-center gap-3">
+                              <div className="px-2 py-1 rounded bg-blue-500 text-[10px] font-black tracking-tighter shadow-lg shadow-blue-500/20">SYSTEM JOB</div>
+                              <span className="text-xs font-medium text-blue-200">Active every minute</span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* PROMPT & KNOWLEDGE MANAGEMENT */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-3xl">
+                      <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Smartphone className="w-5 h-5 text-indigo-500" />
+                          <h3 className="text-sm font-bold text-slate-800">WhatsApp Engine Settings</h3>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setRoute("logs")} className="text-[10px] font-black h-7">VIEW HISTORY</Button>
+                      </div>
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 italic text-[11px] text-slate-500 leading-relaxed">
+                            "Self-recovery is active: If a conversation is idle for &gt;5h, the AI will automatically summarize and push to CRM."
+                          </div>
+                          <Button
+                            className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-100"
+                            onClick={() => toast.info("WhatsApp configuration portal coming soon")}
+                          >
+                            Configure Call-to-Chat Bridging
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-3xl">
+                      <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Users className="w-5 h-5 text-rose-500" />
+                          <h3 className="text-sm font-bold text-slate-800">Sales Group Rotation</h3>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-bold">Round-Robin Active</Badge>
+                      </div>
+                      <CardContent className="p-6">
+                        <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase">Active Sales Groups</p>
+                            <p className="text-lg font-black text-slate-900 mt-0.5">4 Groups Active</p>
+                          </div>
+                          <Button size="sm" variant="outline" className="rounded-xl h-9 border-slate-200" onClick={() => toast.info("Sales assignment manager coming soon")}>
+                            MANAGE TEAMS
+                          </Button>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-4 leading-relaxed px-1">
+                          The engine automatically balances leads across these groups based on their "Callback" or "Agent" interest intents.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
 
@@ -1105,14 +1549,13 @@ function Dashboard() {
                       {credentials.map(c => (
                         <div key={c.id} className="flex items-center justify-between bg-white border rounded-lg px-4 py-3 shadow-sm group">
                           <div className="flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-md flex items-center justify-center ${
-                              credStatus[c.id]?.ok === true ? "bg-green-100" :
-                              credStatus[c.id]?.ok === false ? "bg-red-100" :
-                              "bg-slate-100"
-                            }`}>
+                            <div className={`w-9 h-9 rounded-md flex items-center justify-center ${credStatus[c.id]?.ok === true ? "bg-green-100" :
+                                credStatus[c.id]?.ok === false ? "bg-red-100" :
+                                  "bg-slate-100"
+                              }`}>
                               {credStatus[c.id]?.ok === true ? <CheckCircle2 className="w-4 h-4 text-green-600" /> :
-                               credStatus[c.id]?.ok === false ? <XCircle className="w-4 h-4 text-red-600" /> :
-                               <ShieldCheck className="w-4 h-4 text-slate-500" />}
+                                credStatus[c.id]?.ok === false ? <XCircle className="w-4 h-4 text-red-600" /> :
+                                  <ShieldCheck className="w-4 h-4 text-slate-500" />}
                             </div>
                             <div>
                               <p className="font-medium text-sm flex items-center gap-2">
@@ -1148,24 +1591,23 @@ function Dashboard() {
                                 </div>
                                 <div className="p-6">
                                   <div className="flex flex-col items-center text-center">
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-                                      isVerifying ? "bg-blue-50 text-blue-600" :
-                                      verifyResult?.ok ? "bg-green-50 text-green-600" :
-                                      "bg-red-50 text-red-600"
-                                    }`}>
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${isVerifying ? "bg-blue-50 text-blue-600" :
+                                        verifyResult?.ok ? "bg-green-50 text-green-600" :
+                                          "bg-red-50 text-red-600"
+                                      }`}>
                                       {isVerifying ? <Server className="w-8 h-8 animate-pulse" /> :
-                                       verifyResult?.ok ? <CheckCircle2 className="w-8 h-8" /> :
-                                       <AlertCircle className="w-8 h-8" />}
+                                        verifyResult?.ok ? <CheckCircle2 className="w-8 h-8" /> :
+                                          <AlertCircle className="w-8 h-8" />}
                                     </div>
                                     <DialogTitle className="text-xl font-bold mb-1">
                                       {isVerifying ? "Verifying Connection..." :
-                                       verifyResult?.ok ? "Credential Valid" :
-                                       "Verification Failed"}
+                                        verifyResult?.ok ? "Credential Valid" :
+                                          "Verification Failed"}
                                     </DialogTitle>
                                     <DialogDescription className="text-slate-500 text-sm">
                                       {isVerifying ? `Testing encrypted handshake with ${c.integration}...` :
-                                       verifyResult?.ok ? `Successfully authenticated with ${c.integration}. This key is ready for use.` :
-                                       verifyResult?.msg || "The provided key could not be authenticated."}
+                                        verifyResult?.ok ? `Successfully authenticated with ${c.integration}. This key is ready for use.` :
+                                          verifyResult?.msg || "The provided key could not be authenticated."}
                                     </DialogDescription>
 
                                     {!isVerifying && (
@@ -1188,7 +1630,7 @@ function Dashboard() {
                                 </div>
                               </DialogContent>
                             </Dialog>
-                            
+
                             <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0" onClick={() => deleteCredential(c.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -1241,12 +1683,11 @@ function Dashboard() {
                               <TableCell className="font-medium text-sm">{(e as any).workflow?.alias || e.workflow_id.slice(0, 8)}</TableCell>
                               <TableCell>
                                 <Badge
-                                  className={`text-[10px] ${
-                                    e.status === "completed" ? "bg-green-100 text-green-700 border-none" :
-                                    e.status === "failed" ? "bg-red-100 text-red-700 border-none" :
-                                    e.status === "running" ? "bg-blue-100 text-blue-700 border-none" :
-                                    "bg-slate-100 text-slate-600 border-none"
-                                  }`}
+                                  className={`text-[10px] ${e.status === "completed" ? "bg-green-100 text-green-700 border-none" :
+                                      e.status === "failed" ? "bg-red-100 text-red-700 border-none" :
+                                        e.status === "running" ? "bg-blue-100 text-blue-700 border-none" :
+                                          "bg-slate-100 text-slate-600 border-none"
+                                    }`}
                                 >
                                   {e.status === "running" && <Loader2 className="w-2.5 h-2.5 animate-spin mr-1" />}
                                   {e.status}
@@ -1269,6 +1710,212 @@ function Dashboard() {
                       </Table>
                     </Card>
                   )}
+                </div>
+              )}
+
+              {/* ===================== AUDIT TRAIL TAB ===================== */}
+              {route === "audit" && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Security & Audit Trail</h2>
+                      <p className="text-sm text-slate-500 font-medium">Chronological history of all high-criticality operations.</p>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <Activity className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">System Pulse</p>
+                          <p className="text-sm font-black text-slate-900">Active</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={fetchAuditLogs} className="rounded-xl h-10 border-slate-200">
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loadingAudit ? "animate-spin" : ""}`} />
+                        Refresh Logs
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[24px] overflow-hidden bg-white">
+                      <Table>
+                        <TableHeader className="bg-slate-50/50">
+                          <TableRow className="hover:bg-transparent border-0">
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-6 h-12">Timestamp</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12">Action</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12">Operator Attribution</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12 pr-6">Context</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loadingAudit ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="py-20 text-center">
+                                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600/30" />
+                              </TableCell>
+                            </TableRow>
+                          ) : auditLogs.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="py-20 text-center text-slate-400 italic">No audit records found yet.</TableCell>
+                            </TableRow>
+                          ) : (
+                            auditLogs.map((log) => (
+                              <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors border-0">
+                                <TableCell className="pl-6 py-4 font-mono text-[10px] text-slate-400">
+                                  {new Date(log.created_at).toLocaleString()}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                    log.action.includes("START") ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                                    log.action.includes("STOP") ? "bg-rose-50 text-rose-700 border-rose-100" :
+                                    "bg-blue-50 text-blue-700 border-blue-100"
+                                  }`}>
+                                    {log.action}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${log.user_id ? "bg-blue-50 text-blue-600" : "bg-slate-100 text-slate-500"}`}>
+                                      <UserIcon className="w-3 h-3" />
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-700">
+                                      {log.user_name || "System Engine"}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="pr-6">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs font-medium text-slate-600">{log.workflow_alias}</span>
+                                    <span className="text-[9px] text-slate-400 font-mono truncate max-w-[200px]">{log.details}</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  </div>
+                </div>
+              )}
+
+              {/* ===================== USER MANAGEMENT TAB ===================== */}
+              {route === "users" && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="flex items-center justify-between mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-900 tracking-tight">Operators & Access</h2>
+                      <p className="text-sm text-slate-500 font-medium">Manage team members and dashboard permissions.</p>
+                    </div>
+                    <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
+                      <DialogTrigger render={
+                        <Button className="rounded-xl h-10 px-6 font-bold text-xs uppercase tracking-widest gap-2 bg-blue-600 shadow-lg shadow-blue-200">
+                          <Plus className="w-4 h-4" />
+                          Create New User
+                        </Button>
+                      } />
+                      <DialogContent className="sm:max-w-[400px] bg-white border shadow-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Add Platform Operator</DialogTitle>
+                          <DialogDescription>Create a new user to access the FlowBuilder dashboard.</DialogDescription>
+                        </DialogHeader>
+                        <div className="py-6 space-y-5">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+                            <Input 
+                              placeholder="John Doe" 
+                              value={newUser.name}
+                              onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                              className="h-10 px-4 rounded-xl"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
+                            <Input 
+                              type="email"
+                              placeholder="john@company.com" 
+                              value={newUser.email}
+                              onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                              className="h-10 px-4 rounded-xl"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Initial Password</label>
+                            <Input 
+                              type="password"
+                              placeholder="••••••••" 
+                              value={newUser.password}
+                              onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                              className="h-10 px-4 rounded-xl"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-4 border-t">
+                          <DialogClose render={<Button variant="ghost">Cancel</Button>} />
+                          <Button onClick={createUser} className="bg-blue-600 text-white px-6">Confirm and Save</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6">
+                    <Card className="border-0 shadow-xl shadow-slate-200/50 rounded-[24px] overflow-hidden bg-white">
+                      <Table>
+                        <TableHeader className="bg-slate-50/50">
+                          <TableRow className="hover:bg-transparent border-0">
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-6 h-12">User Identity</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12">Email Address</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12">Created At</TableHead>
+                            <TableHead className="text-[10px] font-black text-slate-400 uppercase tracking-widest h-12 pr-6 text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {loadingUsers ? (
+                            <TableRow>
+                              <TableCell colSpan={4} className="py-20 text-center">
+                                <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600/30" />
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            allUsers.map(user => (
+                              <TableRow key={user.id} className="hover:bg-slate-50/50 transition-colors border-0">
+                                <TableCell className="pl-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center">
+                                      <UserIcon className="w-4 h-4 text-slate-500" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-900 text-sm">{user.name}</span>
+                                      <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Operator</span>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs font-medium text-slate-600">{user.email}</span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs text-slate-400">{new Date(user.created_at).toLocaleDateString()}</span>
+                                </TableCell>
+                                <TableCell className="pr-6 text-right">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0 text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                                    onClick={() => deleteUser(user.id)}
+                                    disabled={user.id === currentUser?.id}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  </div>
                 </div>
               )}
 
@@ -1310,11 +1957,10 @@ function Dashboard() {
               (executionLogs || []).map((log: ExecutionLog, i: number) => (
                 <div key={log.id || i} className="group flex gap-3 hover:bg-slate-900/50 py-0.5 px-1 -mx-1 rounded">
                   <span className="text-slate-600 shrink-0 select-none w-14">[{new Date(log.created_at).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
-                  <span className={`w-12 shrink-0 font-bold select-none ${
-                    log.level === 'ERROR' ? 'text-rose-500' : 
-                    log.level === 'WARN' ? 'text-amber-500' : 
-                    'text-emerald-500'
-                  }`}>
+                  <span className={`w-12 shrink-0 font-bold select-none ${log.level === 'ERROR' ? 'text-rose-500' :
+                      log.level === 'WARN' ? 'text-amber-500' :
+                        'text-emerald-500'
+                    }`}>
                     {log.level}
                   </span>
                   <span className="text-slate-300 break-all whitespace-pre-wrap">{log.message}</span>
@@ -1322,7 +1968,7 @@ function Dashboard() {
               ))
             )}
           </div>
-          
+
           <div className="p-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="bg-slate-800 border-slate-700 text-[10px] font-mono lowercase">{executionLogs.length} events</Badge>
@@ -1353,7 +1999,7 @@ function Dashboard() {
 
           <div className="flex-1 overflow-y-auto p-10 bg-slate-50/30">
             <div className="max-w-3xl mx-auto space-y-10">
-              
+
               {/* Architecture Visualization Section */}
               <section>
                 <div className="flex items-center gap-2 mb-4">
@@ -1361,7 +2007,7 @@ function Dashboard() {
                   <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Architecture Train</h4>
                 </div>
                 <div className="bg-white border rounded-2xl p-8 shadow-sm">
-                   {viewingBlueprint?.steps && (
+                  {viewingBlueprint?.steps && (
                     <div className="flex items-center justify-center gap-0">
                       {viewingBlueprint.steps.map((step: Step, i: number) => {
                         const Icon = (icons as any)[step.icon] || icons.Zap;
@@ -1390,7 +2036,7 @@ function Dashboard() {
                   <FileCode2 className="w-4 h-4 text-slate-400" />
                   <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Logic Manifest</h4>
                 </div>
-                
+
                 <div className="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col">
                   {loadingLogic ? (
                     <div className="py-20 flex flex-col items-center gap-4 text-slate-400">
@@ -1404,7 +2050,7 @@ function Dashboard() {
                           <Activity className="w-4 h-4" />
                           <span className="text-xs font-bold uppercase tracking-wider">AI Collaboration Bible</span>
                         </div>
-                        <Button 
+                        <Button
                           size="xs"
                           className="bg-white/20 hover:bg-white/30 text-white border-white/20 text-[10px] font-bold h-7"
                           onClick={() => {
@@ -1430,20 +2076,20 @@ function Dashboard() {
                 <div>
                   <h5 className="text-sm font-bold text-amber-900">How to use this Blueprint</h5>
                   <p className="text-xs text-amber-800 leading-relaxed mt-1">
-                    This document is a 1:1 map of the Go source code. If you want to change how this workflow works, copy the 
-                    <strong> Logic Manifest</strong> above, paste it to your AI assistant, and describe your change. 
+                    This document is a 1:1 map of the Go source code. If you want to change how this workflow works, copy the
+                    <strong> Logic Manifest</strong> above, paste it to your AI assistant, and describe your change.
                     I will then implement it in code and update this blueprint automatically.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="p-5 bg-white border-t flex justify-end gap-3 shrink-0">
             <Button variant="outline" onClick={() => setViewingBlueprint(null)}>Close</Button>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
-               navigator.clipboard.writeText(logicContent);
-               toast.success("Blueprint copied!");
+              navigator.clipboard.writeText(logicContent);
+              toast.success("Blueprint copied!");
             }}>Copy Blueprint</Button>
           </div>
         </DialogContent>

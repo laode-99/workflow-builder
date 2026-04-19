@@ -430,7 +430,7 @@ func applySaveLeadsDataV2(ctx context.Context, lead *model.Lead, args struct {
 	}
 
 	leadRepo := repo.NewLeadRepo(deps.DB)
-	_, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, repo.AuditEntry{
+	_, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, nil, repo.AuditEntry{
 		Actor:     "chatbot.save_leads_data",
 		EventType: "save_leads_data_tool",
 		Changes: map[string]any{

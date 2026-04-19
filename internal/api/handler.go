@@ -22,76 +22,82 @@ import (
 
 // Handler holds dependencies for all HTTP handlers
 type Handler struct {
-	repo       *Repo
-	asynq      *asynq.Client
-	rdb        *redis.Client
-	encKey     []byte
+	repo      *Repo
+	asynq     *asynq.Client
+	rdb       *redis.Client
+	encKey    []byte
+	jwtSecret []byte
 }
 
-func NewHandler(repo *Repo, asynqClient *asynq.Client, rdb *redis.Client, encKey []byte) *Handler {
-	return &Handler{repo: repo, asynq: asynqClient, rdb: rdb, encKey: encKey}
+func NewHandler(repo *Repo, asynqClient *asynq.Client, rdb *redis.Client, encKey, jwtSecret []byte) *Handler {
+	return &Handler{repo: repo, asynq: asynqClient, rdb: rdb, encKey: encKey, jwtSecret: jwtSecret}
 }
 
 // RegisterRoutes wires all routes
 func (h *Handler) RegisterRoutes(app *fiber.App) {
-	// Public Routes (Webhooks)
-	// These implement their own security (HMAC or secret)
+	// 1. Auth & Public (No Auth Middleware)
+	auth := app.Group("/api/auth")
+	auth.Post("/login", h.Login)
+
+	// Public Webhooks (Internal security check per handler)
 	public := app.Group("/api/webhooks")
 	public.Post("/leadflow/retell", h.HandleLeadflowRetell)
 	public.Post("/leadflow/chat-inbound/:slug", h.HandleChatInbound)
 	public.All("/*", h.HandleWebhook)
-	
-	// Protected Routes (Admin & Management)
-	api := app.Group("/api", AdminAuth())
+
+	// 2. Dashboard & Management (Protected by JWT or API Key)
+	mgmt := app.Group("/api", AdminAuth(h.jwtSecret))
+
+	// Business & Project Management
+	mgmt.Get("/businesses", h.ListBusinesses)
+	mgmt.Post("/businesses", h.CreateBusiness)
+	mgmt.Get("/businesses/:id", h.GetBusiness)
+	mgmt.Put("/businesses/:id", h.UpdateBusiness)
+	mgmt.Delete("/businesses/:id", h.DeleteBusiness)
+
+	// Audit Logs
+	mgmt.Get("/businesses/:bid/audit-logs", h.ListAuditLogs)
 
 	// Registry
-	api.Get("/registry", h.GetRegistry)
-
-	// Businesses
-	api.Get("/businesses", h.ListBusinesses)
-	api.Post("/businesses", h.CreateBusiness)
-	api.Get("/businesses/:id", h.GetBusiness)
-	api.Put("/businesses/:id", h.UpdateBusiness)
-	api.Delete("/businesses/:id", h.DeleteBusiness)
+	mgmt.Get("/registry", h.GetRegistry)
 
 	// Workflows
-	api.Get("/businesses/:bid/workflows", h.ListWorkflows)
-	api.Post("/businesses/:bid/workflows", h.CreateWorkflow)
-	api.Patch("/workflows/:id/toggle", h.ToggleWorkflow)
-	api.Patch("/workflows/:id/cron", h.UpdateWorkflowCron)
-	api.Patch("/workflows/:id/stop-time", h.UpdateWorkflowStopTime)
-	api.Patch("/workflows/:id/variables", h.UpdateWorkflowVars)
-	api.Delete("/workflows/:id", h.DeleteWorkflowHandler)
-	api.Post("/workflows/:id/trigger", h.TriggerWorkflow)
-	api.Post("/workflows/:id/stop", h.StopWorkflow)
-	api.Get("/workflows/:id/logic", h.GetWorkflowLogic)
-	api.Post("/workflows/n8n/callback", h.HandleN8NCallback)
+	mgmt.Get("/businesses/:bid/workflows", h.ListWorkflows)
+	mgmt.Post("/businesses/:bid/workflows", h.CreateWorkflow)
+	mgmt.Patch("/workflows/:id/toggle", h.ToggleWorkflow)
+	mgmt.Delete("/workflows/:id", h.DeleteWorkflowHandler)
+	mgmt.Post("/workflows/:id/trigger", h.TriggerWorkflow)
+	mgmt.Post("/workflows/:id/stop", h.StopWorkflow)
+	mgmt.Get("/executions/:id", h.GetExecutionStatus)
+	mgmt.Get("/workflows/:id/executions", h.ListExecutions)
+	mgmt.Patch("/workflows/:id/vars", h.UpdateWorkflowVars)
+	mgmt.Patch("/workflows/:id/cron", h.UpdateWorkflowCron)
+	mgmt.Patch("/workflows/:id/stop-time", h.UpdateWorkflowStopTime)
 
 	// Credentials
-	api.Get("/credentials", h.ListCredentials)
-	api.Post("/credentials", h.CreateCredential)
-	api.Delete("/credentials/:id", h.DeleteCredential)
-	api.Post("/credentials/:id/verify", h.VerifyCredential)
-	api.Post("/credentials/:id/preview", h.PreviewCredentialData)
+	mgmt.Get("/businesses/:bid/credentials", h.ListCredentials)
+	mgmt.Post("/credentials", h.CreateCredential)
+	mgmt.Delete("/credentials/:id", h.DeleteCredential)
 
-	// Admin: Prompts
-	api.Get("/businesses/:bid/prompts", h.ListPrompts)
-	api.Post("/businesses/:bid/prompts", h.CreatePrompt)
+	// Prompts & Sales
+	mgmt.Get("/businesses/:bid/prompts", h.ListPrompts)
+	mgmt.Post("/prompts", h.CreatePrompt)
+	mgmt.Get("/businesses/:bid/sales", h.ListSales)
+	mgmt.Post("/sales", h.UpsertSales)
+	mgmt.Patch("/sales/:id/toggle", h.ToggleSales)
 
-	// Admin: Sales
-	api.Get("/businesses/:bid/sales", h.ListSales)
-	api.Post("/businesses/:bid/sales", h.UpsertSales)
-	api.Patch("/sales/:id/toggle", h.ToggleSales)
+	// Leads
+	mgmt.Get("/businesses/:bid/leads", h.ListLeadsExtended)
+	mgmt.Get("/leads/:id/messages", h.ListMessages)
 
-	// Admin: Leads
-	api.Get("/businesses/:bid/leads", h.ListLeadsExtended)
-	api.Get("/leads/:id/messages", h.ListMessages)
+	// Executions by business
+	mgmt.Get("/businesses/:bid/executions", h.ListExecutionsByBusiness)
+	mgmt.Get("/executions/:id/logs", h.ListExecutionLogs)
 
-	// Executions
-	api.Get("/businesses/:bid/executions", h.ListExecutionsByBusiness)
-	api.Get("/workflows/:id/executions", h.ListExecutions)
-	api.Get("/executions/:id", h.GetExecution)
-	api.Get("/executions/:id/logs", h.ListExecutionLogs)
+	// Users
+	mgmt.Get("/users", h.ListUsers)
+	mgmt.Post("/users", h.CreateUser)
+	mgmt.Delete("/users/:id", h.DeleteUser)
 }
 
 func (h *Handler) HandleLeadflowRetell(c *fiber.Ctx) error {
@@ -111,15 +117,17 @@ func (h *Handler) GetRegistry(c *fiber.Ctx) error {
 		Signature string      `json:"signature"`
 		Name      string      `json:"name"`
 		Desc      string      `json:"description"`
+		Category  string      `json:"category,omitempty"`
 		Params    []sdk.Param `json:"params"`
 		Steps     []sdk.Step  `json:"steps"`
 	}
-	var res []enriched
+	res := []enriched{}
 	for sig, def := range sdk.Registry.Workflows {
 		res = append(res, enriched{
 			Signature: sig,
 			Name:      def.Name,
 			Desc:      def.Description,
+			Category:  def.Category,
 			Params:    def.Params,
 			Steps:     def.Steps,
 		})
@@ -139,6 +147,7 @@ func (h *Handler) ListBusinesses(c *fiber.Ctx) error {
 
 type createBusinessReq struct {
 	Name string `json:"name"`
+	Kind string `json:"kind"`
 }
 
 func (h *Handler) CreateBusiness(c *fiber.Ctx) error {
@@ -149,8 +158,18 @@ func (h *Handler) CreateBusiness(c *fiber.Ctx) error {
 	if req.Name == "" {
 		return c.Status(400).JSON(fiber.Map{"error": "name required"})
 	}
+	if req.Kind == "" {
+		req.Kind = "standard"
+	}
 	slug := strings.ToLower(strings.ReplaceAll(req.Name, " ", "-"))
-	b := model.Business{Name: req.Name, Slug: slug}
+
+	// Check if slug exists to avoid 500 error from unique constraint
+	existing, _ := h.repo.GetBusinessBySlug(slug)
+	if existing != nil && existing.ID != uuid.Nil {
+		return c.Status(400).JSON(fiber.Map{"error": "A business with this name already exists. Please choose a different name."})
+	}
+
+	b := model.Business{Name: req.Name, Slug: slug, Kind: req.Kind}
 	if err := h.repo.CreateBusiness(&b); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -175,24 +194,26 @@ func (h *Handler) ListWorkflows(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid business id"})
 	}
-	items, err := h.repo.ListWorkflowsByBusiness(bid)
+	items, err := h.repo.ListWorkflows(bid)
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	type enriched struct {
 		model.Workflow
-		SDKName   string      `json:"sdk_name"`
-		SDKDesc   string      `json:"sdk_description"`
-		Params    []sdk.Param `json:"params"`
-		Steps     []sdk.Step  `json:"steps"`
+		SDKName  string      `json:"sdk_name"`
+		SDKDesc  string      `json:"sdk_description"`
+		Category string      `json:"category,omitempty"`
+		Params   []sdk.Param `json:"params"`
+		Steps    []sdk.Step  `json:"steps"`
 	}
-	var result []enriched
+	result := []enriched{}
 	for _, w := range items {
 		e := enriched{Workflow: w}
 		if def, ok := sdk.Registry.Workflows[w.Signature]; ok {
 			e.SDKName = def.Name
 			e.SDKDesc = def.Description
+			e.Category = def.Category
 			e.Params = def.Params
 			e.Steps = def.Steps
 		}
@@ -325,13 +346,32 @@ func (h *Handler) TriggerWorkflow(c *fiber.Ctx) error {
 	}
 
 	// Create execution record
+	uidStr, _ := c.Locals("user_id").(string)
+	var uid *uuid.UUID
+	if parsed, err := uuid.Parse(uidStr); err == nil {
+		uid = &parsed
+	}
+
 	exec := model.Execution{
-		WorkflowID: wf.ID,
-		Status:     "queued",
+		ID:              uuid.New(),
+		WorkflowID:      wf.ID,
+		Status:          "queued",
+		TriggeredByID:   uid,
+		TriggeredByType: "user",
 	}
 	if err := h.repo.CreateExecution(&exec); err != nil {
 		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	// Create Audit Log
+	h.repo.CreateAuditLog(&model.AuditLog{
+		BusinessID: wf.BusinessID,
+		UserID:     uid,
+		Action:     "START_WORKFLOW",
+		TargetID:   exec.ID,
+		TargetType: "execution",
+		Details:    `{"workflow_alias": "` + wf.Alias + `"}`,
+	})
 
 	// Enqueue task in Redis via Asynq
 	payload, _ := json.Marshal(map[string]string{
@@ -367,12 +407,69 @@ func (h *Handler) StopWorkflow(c *fiber.Ctx) error {
 	// Update local status so UI reflects stopping
 	h.repo.db.Model(&exec).Update("status", "stopped")
 
+	// Create Audit Log
+	uidStr, _ := c.Locals("user_id").(string)
+	var uid *uuid.UUID
+	if parsed, err := uuid.Parse(uidStr); err == nil {
+		uid = &parsed
+	}
+	h.repo.CreateAuditLog(&model.AuditLog{
+		BusinessID: exec.Workflow.BusinessID,
+		UserID:     uid,
+		Action:     "STOP_WORKFLOW",
+		TargetID:   exec.ID,
+		TargetType: "execution",
+		Details:    `{"workflow_alias": "` + exec.Workflow.Alias + `"}`,
+	})
+
 	return c.JSON(fiber.Map{"ok": true, "execution_id": exec.ID})
+}
+
+func (h *Handler) ListAuditLogs(c *fiber.Ctx) error {
+	bid, err := uuid.Parse(c.Params("bid"))
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "invalid business id"})
+	}
+	items, err := h.repo.ListAuditLogs(bid, 50)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+	}
+	// Fetch users for attribution
+	users, _ := h.repo.ListUsers()
+	userMap := make(map[uuid.UUID]string)
+	for _, u := range users {
+		userMap[u.ID] = u.Name
+	}
+
+	type enrichedAudit struct {
+		model.AuditLog
+		UserName      string `json:"user_name,omitempty"`
+		WorkflowAlias string `json:"workflow_alias,omitempty"`
+	}
+
+	result := []enrichedAudit{}
+	for _, log := range items {
+		e := enrichedAudit{AuditLog: log}
+		if log.UserID != nil {
+			e.UserName = userMap[*log.UserID]
+		}
+		
+		// Parse details for workflow alias since the UI expects it as a top-level field
+		var details map[string]interface{}
+		if err := json.Unmarshal([]byte(log.Details), &details); err == nil {
+			if alias, ok := details["workflow_alias"].(string); ok {
+				e.WorkflowAlias = alias
+			}
+		}
+		result = append(result, e)
+	}
+
+	return c.JSON(result)
 }
 
 func (h *Handler) GetExecutionStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
-	
+
 	// Check Redis stop flag first
 	val, _ := h.rdb.Get(c.Context(), "stop:"+id).Result()
 	if val == "1" {
@@ -631,7 +728,7 @@ func (h *Handler) GetWorkflowLogic(c *fiber.Ctx) error {
 	// Resolve absolute path to ensure we find the file regardless of CWD
 	wd, _ := os.Getwd()
 	fPath := filepath.Join(wd, "internal", "workflows", folder, "LOGIC.md")
-	
+
 	content, err := os.ReadFile(fPath)
 	if err != nil {
 		// Fallback to relative if absolute fails for some reason
@@ -639,8 +736,8 @@ func (h *Handler) GetWorkflowLogic(c *fiber.Ctx) error {
 		content, err = os.ReadFile(fPath)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{
-				"error": "logic file not found",
-				"path": fPath,
+				"error":   "logic file not found",
+				"path":    fPath,
 				"details": err.Error(),
 			})
 		}

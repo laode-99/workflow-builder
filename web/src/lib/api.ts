@@ -7,15 +7,24 @@ const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace
 const ADMIN_API_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "admin-secret-dev";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("fb_token") : null;
   const headers = {
     "Content-Type": "application/json",
-    "X-API-Key": ADMIN_API_KEY,
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(init?.headers || {}),
   };
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers,
   });
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("fb_token");
+      if (!path.includes("/api/auth/login")) {
+        window.location.href = "/login";
+      }
+    }
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `API ${res.status}`);
@@ -29,6 +38,27 @@ export interface Business {
   id: string;
   name: string;
   slug: string;
+  kind: string;
+  created_at: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  business_id: string;
+  user_id?: string;
+  user_name?: string;
+  action: string;
+  target_id: string;
+  workflow_alias?: string;
+  target_type: string;
+  details: string;
   created_at: string;
 }
 
@@ -43,6 +73,7 @@ export interface RegistryItem {
   signature: string;
   name: string;
   description: string;
+  category?: string;
   params: WorkflowParam[];
   steps: Step[];
 }
@@ -68,6 +99,7 @@ export interface Workflow {
   business_id: string;
   signature: string;
   alias: string;
+  category?: string;
   is_active: boolean;
   trigger_cron?: string;
   stop_time?: string;
@@ -82,10 +114,12 @@ export interface Workflow {
 export interface Execution {
   id: string;
   workflow_id: string;
-  status: string;
-  error_msg: string;
-  started_at: string | null;
-  completed_at: string | null;
+  status: "queued" | "running" | "completed" | "failed" | "stopped";
+  triggered_by_id?: string;
+  triggered_by_type: "user" | "system";
+  error_msg?: string;
+  started_at?: string;
+  completed_at?: string;
   created_at: string;
   workflow?: Workflow;
 }
@@ -151,10 +185,10 @@ export const api = {
 
   // Businesses
   listBusinesses: () => request<Business[]>("/api/businesses"),
-  createBusiness: (name: string) =>
+  createBusiness: (name: string, kind: string = "standard") =>
     request<Business>("/api/businesses", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, kind }),
     }),
   deleteBusiness: (id: string) =>
     request<{ ok: boolean }>(`/api/businesses/${id}`, { method: "DELETE" }),
@@ -170,7 +204,7 @@ export const api = {
   toggleWorkflow: (id: string) =>
     request<Workflow>(`/api/workflows/${id}/toggle`, { method: "PATCH" }),
   updateWorkflowVars: (id: string, variables: string) =>
-    request<{ ok: boolean }>(`/api/workflows/${id}/variables`, {
+    request<{ ok: boolean }>(`/api/workflows/${id}/vars`, {
       method: "PATCH",
       body: JSON.stringify({ variables }),
     }),
@@ -200,7 +234,7 @@ export const api = {
   verifyCredential: (id: string) =>
     request<{ ok: boolean }>(`/api/credentials/${id}/verify`, { method: "POST" }),
   previewCredentialData: (id: string, sheet_id: string, tab_name: string) =>
-    request<any[]>(`/api/credentials/${id}/preview`, { 
+    request<any[]>(`/api/credentials/${id}/preview`, {
       method: "POST",
       body: JSON.stringify({ sheet_id, tab_name })
     }),
@@ -246,4 +280,23 @@ export const api = {
     request<{ ok: boolean }>(`/api/sales/${id}/toggle`, { method: "PATCH" }),
   listMessages: (leadId: string) =>
     request<ChatMessage[]>(`/api/leads/${leadId}/messages`),
+  // Auth
+  login: (email: string, password: string) =>
+    request<{ token: string; user: User }>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+
+  // User Management
+  listUsers: () => request<User[]>("/api/users"),
+  createUser: (data: any) => request<User>("/api/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
+  deleteUser: (id: string) => request<{ ok: boolean }>(`/api/users/${id}`, {
+    method: "DELETE",
+  }),
+
+  // Audit Logs
+  listAuditLogs: (bid: string) => request<AuditLog[]>(`/api/businesses/${bid}/audit-logs`),
 };

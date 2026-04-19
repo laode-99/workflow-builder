@@ -18,7 +18,9 @@ import (
 	pkglog "github.com/workflow-builder/core/pkg/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"golang.org/x/crypto/bcrypt"
 
+	_ "github.com/workflow-builder/core/internal/workflows/leadflow"
 	_ "github.com/workflow-builder/core/internal/workflows/mortgage"
 	_ "github.com/workflow-builder/core/internal/workflows/n8n"
 )
@@ -54,6 +56,8 @@ func main() {
 		&model.Workflow{},
 		&model.Execution{},
 		&model.ExecutionLog{},
+		&model.User{},
+		&model.AuditLog{},
 		// Leadflow engine entities
 		&model.Lead{},
 		&model.LeadMessage{},
@@ -69,6 +73,19 @@ func main() {
 		log.Fatalf("AutoMigrate failed: %v", err)
 	}
 	l.Info("Database migrations applied")
+
+	// --- Seed Admin ---
+	var count int64
+	db.Model(&model.User{}).Count(&count)
+	if count == 0 {
+		hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		db.Create(&model.User{
+			Name:         "Administrator",
+			Email:        "admin@flowbuilder.ai",
+			PasswordHash: string(hash),
+		})
+		l.Info("Default admin user created: admin@flowbuilder.ai / admin123")
+	}
 
 	// --- Redis + Asynq ---
 	var rdb *redis.Client
@@ -104,7 +121,7 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowMethods: "GET,POST,PATCH,DELETE,OPTIONS",
-		AllowHeaders: "Content-Type",
+		AllowHeaders: "Content-Type, X-API-Key, Authorization",
 	}))
 
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -113,7 +130,8 @@ func main() {
 
 	// API Routes
 	repo := api.NewRepo(db)
-	handler := api.NewHandler(repo, asynqClient, rdb, encKey)
+	jwtSecret := []byte(getEnv("JWT_SECRET", "super-secret-jwt-key-change-it-in-prod"))
+	handler := api.NewHandler(repo, asynqClient, rdb, encKey, jwtSecret)
 	handler.RegisterRoutes(app)
 
 	// Leadflow webhook routes (Retell + chat inbound forwarder).

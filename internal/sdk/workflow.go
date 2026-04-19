@@ -19,6 +19,7 @@ type Param struct {
 	Key         string    `json:"key"`
 	Type        ParamType `json:"type"`
 	Description string    `json:"description,omitempty"`
+	Optional    bool      `json:"optional,omitempty"`
 	Integration string    `json:"integration,omitempty"` // For Credential types: e.g. "retell_ai"
 }
 
@@ -34,6 +35,7 @@ type Step struct {
 type WorkflowDef struct {
 	Name        string
 	Description string
+	Category    string // UI categorization: e.g. "ai_engine"
 	Steps       []Step
 	Params      []Param
 	Handler     func(ctx context.Context, exec Execution) error

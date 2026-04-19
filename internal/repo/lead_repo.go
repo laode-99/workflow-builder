@@ -179,9 +179,10 @@ func (r *LeadRepo) Transition(
 	leadID uuid.UUID,
 	expectedVersion int,
 	patch statemachine.Patch,
+	commands []statemachine.Command,
 	audit AuditEntry,
 ) (*model.Lead, error) {
-	return r.TransitionTx(ctx, r.db, leadID, expectedVersion, patch, audit)
+	return r.TransitionTx(ctx, r.db, leadID, expectedVersion, patch, commands, audit)
 }
 
 // TransitionTx is Transition scoped to a caller-provided transaction,
@@ -193,11 +194,12 @@ func (r *LeadRepo) TransitionTx(
 	leadID uuid.UUID,
 	expectedVersion int,
 	patch statemachine.Patch,
+	commands []statemachine.Command,
 	audit AuditEntry,
 ) (*model.Lead, error) {
-	// Short-circuit: if caller passes an empty patch and no audit event,
+	// Short-circuit: if caller passes an empty patch, no commands, and no audit event,
 	// just return the current row without touching it.
-	if patch.IsEmpty() && audit.EventType == "" {
+	if patch.IsEmpty() && len(commands) == 0 && audit.EventType == "" {
 		var lead model.Lead
 		if err := tx.WithContext(ctx).First(&lead, "id = ?", leadID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -251,6 +253,23 @@ func (r *LeadRepo) TransitionTx(
 				return fmt.Errorf("insert audit: %w", err)
 			}
 		}
+
+		// Handle Atomic Commands (CRM Sync Outbox)
+		for _, cmd := range commands {
+			if sc, ok := cmd.(statemachine.CmdEnqueueCRMSync); ok {
+				intent := &model.CRMSyncIntent{
+					BusinessID: lead.BusinessID,
+					LeadID:     lead.ID,
+					Path:       sc.Path,
+					Payload:    "{}",
+					Status:     "pending",
+				}
+				if err := tx.Create(intent).Error; err != nil {
+					return fmt.Errorf("insert crm sync intent: %w", err)
+				}
+			}
+		}
+
 		return nil
 	}
 

@@ -142,7 +142,7 @@ func (h *RetellHandler) Handle(c *fiber.Ctx) error {
 			Changes:   statemachine.PatchToMap(patch),
 			Reason:    body.Call.DisconnectionReason,
 		}
-		updated, err := leadRepo.TransitionTx(c.Context(), tx, lead.ID, lead.Version, patch, audit)
+		updated, err := leadRepo.TransitionTx(c.Context(), tx, lead.ID, lead.Version, patch, commands, audit)
 		if err != nil {
 			return err
 		}

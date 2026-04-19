@@ -132,7 +132,7 @@ func handleIntentClassifyTask(ctx context.Context, t *asynq.Task) error {
 	if patch.IsEmpty() && len(cmds) == 0 {
 		return nil
 	}
-	updated, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, repo.AuditEntry{
+	updated, err := leadRepo.TransitionTx(ctx, deps.DB, lead.ID, lead.Version, patch, cmds, repo.AuditEntry{
 		Actor:     "intent_classifier",
 		EventType: "intent_classified",
 		Reason:    intent,
@@ -218,7 +218,7 @@ func handleSpamClassifyTask(ctx context.Context, t *asynq.Task) error {
 		time.Now(),
 		true,
 	)
-	updated, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, repo.AuditEntry{
+	updated, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, cmds, repo.AuditEntry{
 		Actor:     "spam_classifier",
 		EventType: "spam_classified",
 	})

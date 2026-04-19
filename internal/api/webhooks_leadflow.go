@@ -11,6 +11,7 @@ import (
 	"github.com/workflow-builder/core/internal/model"
 	"github.com/workflow-builder/core/internal/repo"
 	"github.com/workflow-builder/core/internal/statemachine"
+	"github.com/workflow-builder/core/internal/workflows/leadflow"
 )
 
 func (h *Handler) leadflowRetell(c *fiber.Ctx) error {
@@ -105,12 +106,13 @@ func (h *Handler) leadflowRetell(c *fiber.Ctx) error {
 			EventType: "call_analyzed",
 			Reason:    interest,
 		}
-		if _, err := repo.NewLeadRepo(h.repo.db).TransitionTx(c.Context(), h.repo.db, lead.ID, lead.Version, patch, audit); err != nil {
+		updated, err := repo.NewLeadRepo(h.repo.db).TransitionTx(c.Context(), h.repo.db, lead.ID, lead.Version, patch, commands, audit)
+		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "transition failed: " + err.Error()})
 		}
 
 		// 6. Enqueue Side Effects
-		// TODO: Enqueue commands (CRM Sync, etc.)
+		leadflow.EnqueueCommands(c.Context(), lead.BusinessID, lead.ID, updated.Version, commands)
 		log.Printf("[LEADFLOW] Call analyzed for lead %s. Commands: %d", lead.ID, len(commands))
 	}
 
@@ -187,7 +189,7 @@ func (h *Handler) chatInbound(c *fiber.Ctx) error {
 		Actor: "wa_webhook",
 		EventType: "message_received",
 	}
-	_, _ = repo.NewLeadRepo(h.repo.db).TransitionTx(c.Context(), h.repo.db, lead.ID, lead.Version, patch, audit)
+	_, _ = repo.NewLeadRepo(h.repo.db).TransitionTx(c.Context(), h.repo.db, lead.ID, lead.Version, patch, nil, audit)
 
 	// 5. Enqueue AI Turn Task
 	// In Phase 6 we will implement the actual chatbot agent loop.

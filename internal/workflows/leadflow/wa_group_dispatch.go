@@ -59,7 +59,7 @@ func handleWAGroup(ctx context.Context, exec sdk.Execution) error {
 			_, _ = leadRepo.Transition(ctx, lead.ID, lead.Version, statemachine.Patch{
 				SentToDev:       ptrBool(true),
 				SentToWaGroupAt: &now,
-			}, repo.AuditEntry{
+			}, nil, repo.AuditEntry{
 				Actor:     "wa_group_dispatch",
 				EventType: "wa_group_skipped_no_whatsapp",
 				Reason:    "phone not registered on whatsapp",
@@ -101,7 +101,7 @@ func handleWAGroup(ctx context.Context, exec sdk.Execution) error {
 				EventType: "wa_group_sent",
 				Reason:    fmt.Sprintf("assigned to %s via 2chat", sales.SalesName),
 			}
-			_, err = repo.NewLeadRepo(tx).TransitionTx(ctx, tx, lead.ID, lead.Version, patch, audit)
+			_, err = repo.NewLeadRepo(tx).TransitionTx(ctx, tx, lead.ID, lead.Version, patch, nil, audit)
 			return err
 		})
 		if err != nil {

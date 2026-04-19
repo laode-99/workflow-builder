@@ -69,7 +69,7 @@ func fireInternalNameAlert(ctx context.Context, lead *model.Lead) error {
 		Reason: "lead ingested with empty name; waiting for human name entry",
 	}
 	leadRepo := repo.NewLeadRepo(deps.DB)
-	if _, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, audit); err != nil {
+	if _, err := leadRepo.Transition(ctx, lead.ID, lead.Version, patch, nil, audit); err != nil {
 		return fmt.Errorf("mark name_alert_sent: %w", err)
 	}
 	deps.Log.Infof("internal name alert fired: lead=%s sent_via_wa=%v", lead.ID, sent)

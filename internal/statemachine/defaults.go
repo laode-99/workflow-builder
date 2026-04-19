@@ -22,6 +22,7 @@ type FlowConfig struct {
 	LanguageCode            string           `json:"language_code"`
 	CRM                     CRMCfg           `json:"crm"`
 	Chatbot                 ChatbotCfg       `json:"chatbot"`
+	InternalAlertGroup      string           `json:"internal_alert_group"`
 }
 
 // BusinessHoursCfg defines the per-project outbound-dispatch window.

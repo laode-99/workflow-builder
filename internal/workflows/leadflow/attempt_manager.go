@@ -90,7 +90,7 @@ func handleAttemptManager(ctx context.Context, exec sdk.Execution) error {
 				EventType: "attempt_advanced",
 				Changes:   statemachine.PatchToMap(patch),
 			}
-			updated, err := leadRepo.TransitionTx(ctx, tx, lead.ID, lead.Version, patch, audit)
+			updated, err := leadRepo.TransitionTx(ctx, tx, lead.ID, lead.Version, patch, commands, audit)
 			if err != nil {
 				log.Warnf("Skipping lead %s due to version conflict: %v", lead.ID, err)
 				continue

@@ -93,7 +93,15 @@ func transitionCronTick(lead Lead, cfg FlowConfig, now time.Time, inHours bool) 
 
 	switch lead.Attempt {
 	case 0:
-		// Fresh lead → dispatch call 1.
+		// Fresh lead → check for Name before calling.
+		if lead.Name == "" {
+			if lead.NameAlertSent {
+				return Patch{}, nil, nil
+			}
+			// Send internal alert to fix data manual.
+			return Patch{NameAlertSent: ptrBool(true)}, []Command{CmdEnqueueInternalAlert{Reason: "missing name"}}, nil
+		}
+		// Proceed to dispatch call 1.
 		p := Patch{
 			Attempt:  ptrInt(1),
 			CallDate: ptrTime(now),
@@ -240,24 +248,26 @@ func transitionWAInbound(lead Lead, ev EventWAInbound, now time.Time) (Patch, []
 func transitionIntentClassified(_ Lead, ev EventIntentClassified) (Patch, []Command, error) {
 	switch ev.Intent {
 	case IntentCallback:
-		return Patch{Interest2: ptrString(IntentCallback)}, nil, nil
+		return Patch{Interest2: ptrString(IntentCallback)}, []Command{CmdEnqueueCRMSync{Path: CRMPathResponded}}, nil
 	case IntentTidakTertarik:
 		p := Patch{
 			Interest2:             ptrString(IntentTidakTertarik),
 			TerminalNotInterested: ptrBool(true),
+			CustomerType:          ptrString(CRMStatusSpam),
 		}
 		// Anandaya's CRM mapping sends "Spam" status for Tidak Tertarik leads
-		// (per the reference MAIN SWITCH). Path A because this is a chatbot
-		// interaction, not a no-response timeout.
+		// (per the reference MAIN SWITCH). 
 		return p, []Command{CmdEnqueueCRMSync{Path: CRMPathResponded, Status: CRMStatusSpam}}, nil
 	case IntentAgent:
 		p := Patch{
 			Interest2:     ptrString(IntentAgent),
 			TerminalAgent: ptrBool(true),
+			CustomerType:  ptrString(CRMStatusAgent),
 		}
 		return p, []Command{CmdEnqueueCRMSync{Path: CRMPathResponded, Status: CRMStatusAgent}}, nil
 	default:
-		return Patch{}, nil, fmt.Errorf("statemachine: unknown intent %q", ev.Intent)
+		// Log unknown intent but record it in Interest2
+		return Patch{Interest2: ptrString(ev.Intent)}, []Command{CmdEnqueueCRMSync{Path: CRMPathResponded}}, nil
 	}
 }
 
