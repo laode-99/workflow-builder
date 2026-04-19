@@ -20,7 +20,7 @@ type Scheduler struct {
 
 func NewScheduler(repo *Repo, asynqClient *asynq.Client) *Scheduler {
 	// Initialize cron with Jakarta time
-	loc, _ := time.LoadLocation("Asia/Jakarta")
+	loc := time.FixedZone("Asia/Jakarta", 7*3600)
 	c := cron.New(cron.WithLocation(loc))
 
 	return &Scheduler{
@@ -74,7 +74,7 @@ func (s *Scheduler) tick() {
 		return
 	}
 
-	loc, _ := time.LoadLocation("Asia/Jakarta")
+	loc := time.FixedZone("Asia/Jakarta", 7*3600)
 	now := time.Now().In(loc)
 
 	for _, wf := range workflows {
@@ -88,11 +88,17 @@ func (s *Scheduler) tick() {
 		
 		// If the next calculated run time is within the current minute windows, trigger it
 		if nextRun.After(now.Add(-1 * time.Minute)) && nextRun.Before(now.Add(1 * time.Second)) {
-			// SAFETY CONSTRAINT: Prevent automated cron workflows from running between 9 PM and 8 AM
+			// GLOBAL SAFETY CONSTRAINT: Prevent any automated cron workflows from running between 9 PM and 8 AM
 			// to protect against nighttime dispatches causing customer issues.
 			hour := now.Hour()
 			if hour >= 21 || hour < 8 {
 				log.Printf("[SCHEDULER] BLOCKED workflow '%s' (Nighttime Pause active: %02d:%02d)", wf.Alias, hour, now.Minute())
+				continue
+			}
+
+			// SPECIFIC CONSTRAINT: N8NTriggerWorkflow is restricted to 8 AM - 6 PM (18:00)
+			if wf.Signature == "N8NTriggerWorkflow" && hour >= 18 {
+				log.Printf("[SCHEDULER] BLOCKED N8NTriggerWorkflow '%s' (Operating Hours restricted: 8 AM - 6 PM)", wf.Alias)
 				continue
 			}
 

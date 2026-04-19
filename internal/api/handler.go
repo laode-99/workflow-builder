@@ -345,6 +345,17 @@ func (h *Handler) TriggerWorkflow(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{"error": "workflow not found"})
 	}
 
+	// Safety Check: Restricted Operating Hours for N8NTriggerWorkflow (8 AM - 6 PM Jakarta)
+	if wf.Signature == "N8NTriggerWorkflow" {
+		loc := time.FixedZone("Asia/Jakarta", 7*3600)
+		now := time.Now().In(loc)
+		if now.Hour() < 8 || now.Hour() >= 18 {
+			return c.Status(403).JSON(fiber.Map{
+				"error": "Restricted Operating Hours: This workflow is restricted to 8:00 AM - 6:00 PM Jakarta time. Executes outside this window are automatically rejected.",
+			})
+		}
+	}
+
 	// Create execution record
 	uidStr, _ := c.Locals("user_id").(string)
 	var uid *uuid.UUID

@@ -93,13 +93,12 @@ func N8NTriggerHandler(ctx context.Context, exec sdk.Execution) error {
 	// Working hours validation: only run between 08:00 and 18:00 (Jakarta time)
 	ignoreHours := exec.GetVar("ignore_working_hours")
 	if ignoreHours != "yes" && ignoreHours != "true" {
-		loc, err := time.LoadLocation("Asia/Jakarta")
-		if err == nil {
-			now := time.Now().In(loc)
-			if now.Hour() < 8 || now.Hour() >= 18 {
-				log.Errorf("🚫 Working hours restriction: This workflow can only run between 08:00 and 18:00. Current time: %s", now.Format("15:04"))
-				return fmt.Errorf("workflow execution aborted: outside of operating hours (8 AM - 6 PM)")
-			}
+		// Use FixedZone to ensure reliability across all environments (e.g. Docker, Windows)
+		loc := time.FixedZone("Asia/Jakarta", 7*3600)
+		now := time.Now().In(loc)
+		if now.Hour() < 8 || now.Hour() >= 18 {
+			log.Errorf("🚫 Working hours restriction: This workflow can only run between 08:00 and 18:00. Current time: %s", now.Format("15:04"))
+			return fmt.Errorf("workflow execution aborted: outside of operating hours (8 AM - 6 PM)")
 		}
 	} else {
 		log.Infof("⚠️ Working hours restriction BYPASSED for testing.")
