@@ -96,12 +96,6 @@ func (s *Scheduler) tick() {
 				continue
 			}
 
-			// SPECIFIC CONSTRAINT: N8NTriggerWorkflow is restricted to 8 AM - 6 PM (18:00)
-			if wf.Signature == "N8NTriggerWorkflow" && hour >= 18 {
-				log.Printf("[SCHEDULER] BLOCKED N8NTriggerWorkflow '%s' (Operating Hours restricted: 8 AM - 6 PM)", wf.Alias)
-				continue
-			}
-
 			log.Printf("[SCHEDULER] Triggering workflow '%s' (cron: %s)", wf.Alias, wf.TriggerCron)
 			s.trigger(wf)
 		}
